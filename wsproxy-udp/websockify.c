@@ -56,6 +56,29 @@ int *target_hosts;
 extern int pipe_error;
 extern settings_t settings;
 
+string val;
+ifstream myfile("Config.txt");
+string line;
+    
+while(std::getline(myfile, line)) {
+    stringstream linestream(line);
+    string text;
+
+    getline(linestream, text, '=' );
+    linestream >> val; 
+    
+    if(text =="listen_port") {
+        settings.listen_port = stoi(val.c_str());
+    }
+    if(text == "target_port") {
+        target_port = stoi(val.c_str());
+    }
+    else if(text =="target_host") {
+        strcpy(target_host, val.c_str());
+    }
+}  
+myfile.close();
+
 int resolve_host(struct in_addr *sin_addr, const char *hostname);
 void traffic(char * token);
 int encode_hixie(u_char const *src, size_t srclength,

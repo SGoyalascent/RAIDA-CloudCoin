@@ -34,6 +34,24 @@ int ssl_initialized = 0;
 int pipe_error = 0;
 settings_t settings;
 
+string val;
+ifstream myfile("Config.txt");
+string line;
+    
+while(std::getline(myfile, line)) {
+    stringstream linestream(line);
+    string text;
+
+    getline(linestream, text, '=' );
+    linestream >> val; 
+    
+    if(text =="listen_port") {
+        settings.listen_port = stoi(val.c_str());
+    }
+}
+    
+myfile.close();
+
 
 void traffic(char * token) {
     if ((settings.verbose) && (! settings.daemon)) {
