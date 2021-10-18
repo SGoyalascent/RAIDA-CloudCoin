@@ -1,0 +1,22 @@
+
+int target_port;
+
+char target_host[256];
+
+int *target_ports;
+int *target_hosts;
+
+int listen_port;
+
+struct settings_t{
+
+   int listen_port; 
+}
+
+char listen_host[256];
+
+struct ws_ctx_t{
+
+    struct     sockaddr_in udpaddr; }
+
+int resolve_host(struct in_addr *sin_addr, const char *hostname) 
