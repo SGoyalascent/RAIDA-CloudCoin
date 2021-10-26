@@ -462,6 +462,9 @@ int main(int argc, char *argv[])
 {
     int fd, c, option_index = 0;
     char *found;
+    
+    configfile();
+    
     static struct option long_options[] = {
         {"verbose",   no_argument,       0,                 'v'},
         {"daemon",    no_argument,       0,                 'd'},
