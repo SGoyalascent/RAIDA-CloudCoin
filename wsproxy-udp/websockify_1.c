@@ -1,12 +1,12 @@
 /*
  * A WebSocket to TCP socket proxy with support for "wss://" encryption.
+ * Copyright 2010 Joel Martin
+ * Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
  *
  * You can make a cert/key with openssl using:
  * openssl req -new -x509 -days 365 -nodes -out self.pem -keyout self.pem
+ * as taken from http://docs.python.org/dev/library/ssl.html#certificates
  */
-
-
-#include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
 #include <limits.h>
@@ -53,15 +53,8 @@ char target_host[256];
 int target_port;
 int *target_ports;
 int *target_hosts;
-extern int pipe_error;
+extern pipe_error;
 extern settings_t settings;
-
-void configfile(struct settings_t *settings ) {
-    FILE* myfile = fopen("Config.txt","r");
-    fscanf(myfile, "listen_port=%d target_port=%d target_host=%s", &settings.listen_port, &target_port, target_host);
-    fclose(myfile);
-}
-
 
 void do_proxy(ws_ctx_t *ws_ctx, int target) {
     fd_set rlist, wlist, elist;
@@ -124,7 +117,7 @@ void do_proxy(ws_ctx_t *ws_ctx, int target) {
 
         if (FD_ISSET(target, &wlist)) {
             len = tout_end-tout_start;
-            bytes = sendto(target, ws_ctx->tout_buf + tout_start, len, 0, (struct sockaddr *)&ws_ctx->udpaddr, sizeof(ws_ctx->udpaddr));
+            bytes = sendto(target, ws_ctx->tout_buf + tout_start, len, 0, &ws_ctx->udpaddr, sizeof(ws_ctx->udpaddr));
             if (pipe_error) { break; }
             if (bytes < 0) {
                 handler_emsg("target connection error: %s\n",
@@ -253,7 +246,7 @@ void proxy_handler(ws_ctx_t *ws_ctx) {
     char protocol = 't';
     char dummy;
 
-    sscanf(ws_ctx->headers->path+1, "%c%c%[^:]%c%d" , &protocol, &dummy, target_host, &dummy,&target_port);
+    sscanf(ws_ctx->headers->path+1, "%c%c%[^:]%c%d" , &protocol, &dummy, &target_host, &dummy,&target_port);
 
     if (target_ports != NULL) {
         int *p;
@@ -422,7 +415,7 @@ int load_whitelist_host() {
       line[nread-1] = '\x00';
       int host;
       
-      if (resolve_host((struct in_addr *)&host, line) < -1 ) {
+      if (resolve_host(&host, line) < -1 ) {
           fprintf(stderr,
             "Whitelist host '%s': failed to resolve\n", line);
           //return -3;
@@ -456,8 +449,6 @@ int load_whitelist_host() {
   return 0;
 }
 
-
-// ***** Main function
 int main(int argc, char *argv[])
 {
     int fd, c, option_index = 0;
