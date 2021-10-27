@@ -1,16 +1,19 @@
 /*
  * A WebSocket to TCP socket proxy with support for "wss://" encryption.
+ * Copyright 2010 Joel Martin
+ * Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
  *
  * You can make a cert/key with openssl using:
  * openssl req -new -x509 -days 365 -nodes -out self.pem -keyout self.pem
+ * as taken from http://docs.python.org/dev/library/ssl.html#certificates
  */
-
-
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
 #include <limits.h>
 #include <getopt.h>
+//#include <fstream>
+#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -32,22 +35,22 @@ Traffic Legend:\n\
     <. - Client send partial\n\
 ";
 
-char USAGE[] = "Usage: wsproxy [options] " \
-               "[source_addr:]source_port\n\n" \
-               "  --verbose|-v         verbose messages and per frame traffic\n" \
-               "  --daemon|-d          become a daemon (background process)\n" \
-               "  --whitelist-hosts|-W LIST  new-line separated target host whitelist file\n" \
-               "  --whitelist-ports|-P LIST  new-line separated target port whitelist file\n" \
-    
-    
+char USAGE[] = "Usage: wsproxy [options] "
+               "[source_addr:]source_port\n\n"
+               "  --verbose|-v         verbose messages and per frame traffic\n"
+               "  --daemon|-d          become a daemon (background process)\n"
+               "  --whitelist-hosts|-W LIST  new-line separated target host whitelist file\n"
+               "  --whitelist-ports|-P LIST  new-line separated target port whitelist file\n"
+
                "  --pid|-p             desired path of pid file. Default: '/var/run/websockify.pid'";
 
-#define usage(fmt, args...) \
-    do { \
+#define usage(fmt, args...)               \
+    do                                    \
+    {                                     \
         fprintf(stderr, "%s\n\n", USAGE); \
-        fprintf(stderr, fmt , ## args); \
-        exit(1); \
-    } while(0)
+        fprintf(stderr, fmt, ##args);     \
+        exit(1);                          \
+    } while (0)
 
 char target_host[256];
 int target_port;
@@ -56,14 +59,30 @@ int *target_hosts;
 extern int pipe_error;
 extern settings_t settings;
 
-void configfile(struct settings_t *settings ) {
-    FILE* myfile = fopen("Config.txt","r");
+void traffic(char * token);
+int encode_hixie(u_char const *src, size_t srclength,
+                 char *target, size_t targsize);
+int encode_hybi(u_char const *src, size_t srclength,
+                char *target, size_t targsize, unsigned int opcode);
+int decode_hixie(char *src, size_t srclength,
+                 u_char *target, size_t targsize,
+                 unsigned int *opcode, unsigned int *left);
+int decode_hybi(unsigned char *src, size_t srclength,
+                u_char *target, size_t targsize,
+                unsigned int *opcode, unsigned int *left);
+int resolve_host(struct in_addr *sin_addr, const char *hostname);
+void start_server();
+
+void configfile(settings_t settings)
+{
+    FILE *myfile = fopen("Config.txt", "r");
     fscanf(myfile, "listen_port=%d target_port=%d target_host=%s", &settings.listen_port, &target_port, target_host);
     fclose(myfile);
 }
 
-
-void do_proxy(ws_ctx_t *ws_ctx, int target) {
+void do_proxy(ws_ctx_t *ws_ctx, int target)
+{
+    //ws_ctx_t *ws_ctx = voidData;
     fd_set rlist, wlist, elist;
     struct timeval tv;
     int i, maxfd, client = ws_ctx->sockfd;
@@ -74,9 +93,10 @@ void do_proxy(ws_ctx_t *ws_ctx, int target) {
 
     tout_start = tout_end = cout_start = cout_end;
     tin_start = tin_end = 0;
-    maxfd = client > target ? client+1 : target+1;
+    maxfd = client > target ? client + 1 : target + 1;
 
-    while (1) {
+    while (1)
+    {
         tv.tv_sec = 1;
         tv.tv_usec = 0;
 
@@ -87,91 +107,129 @@ void do_proxy(ws_ctx_t *ws_ctx, int target) {
         FD_SET(client, &elist);
         FD_SET(target, &elist);
 
-        if (tout_end == tout_start) {
+        if (tout_end == tout_start)
+        {
             // Nothing queued for target, so read from client
             FD_SET(client, &rlist);
-        } else {
+        }
+        else
+        {
             // Data queued for target, so write to it
             FD_SET(target, &wlist);
         }
-        if (cout_end == cout_start) {
+        if (cout_end == cout_start)
+        {
             // Nothing queued for client, so read from target
             FD_SET(target, &rlist);
-        } else {
+        }
+        else
+        {
             // Data queued for client, so write to it
             FD_SET(client, &wlist);
         }
 
         ret = select(maxfd, &rlist, &wlist, &elist, &tv);
-        if (pipe_error) { break; }
+        if (pipe_error)
+        {
+            break;
+        }
 
-        if (FD_ISSET(target, &elist)) {
+        if (FD_ISSET(target, &elist))
+        {
             handler_emsg("target exception\n");
             break;
         }
-        if (FD_ISSET(client, &elist)) {
+        if (FD_ISSET(client, &elist))
+        {
             handler_emsg("client exception\n");
             break;
         }
 
-        if (ret == -1) {
+        if (ret == -1)
+        {
             handler_emsg("select(): %s\n", strerror(errno));
             break;
-        } else if (ret == 0) {
+        }
+        else if (ret == 0)
+        {
             //handler_emsg("select timeout\n");
             continue;
         }
 
-        if (FD_ISSET(target, &wlist)) {
-            len = tout_end-tout_start;
+        if (FD_ISSET(target, &wlist))
+        {
+            len = tout_end - tout_start;
             bytes = sendto(target, ws_ctx->tout_buf + tout_start, len, 0, (struct sockaddr *)&ws_ctx->udpaddr, sizeof(ws_ctx->udpaddr));
-            if (pipe_error) { break; }
-            if (bytes < 0) {
+            if (pipe_error)
+            {
+                break;
+            }
+            if (bytes < 0)
+            {
                 handler_emsg("target connection error: %s\n",
                              strerror(errno));
                 break;
             }
             tout_start += bytes;
-            if (tout_start >= tout_end) {
+            if (tout_start >= tout_end)
+            {
                 tout_start = tout_end = 0;
                 traffic(">");
-            } else {
+            }
+            else
+            {
                 traffic(">.");
             }
         }
 
-        if (FD_ISSET(client, &wlist)) {
-            len = cout_end-cout_start;
+        if (FD_ISSET(client, &wlist))
+        {
+            len = cout_end - cout_start;
             bytes = ws_send(ws_ctx, ws_ctx->cout_buf + cout_start, len);
-            if (pipe_error) { break; }
-            if (len < 3) {
+            if (pipe_error)
+            {
+                break;
+            }
+            if (len < 3)
+            {
                 handler_emsg("len: %d, bytes: %d: %d\n",
-                             (int) len, (int) bytes,
-                             (int) *(ws_ctx->cout_buf + cout_start));
+                             (int)len, (int)bytes,
+                             (int)*(ws_ctx->cout_buf + cout_start));
             }
             cout_start += bytes;
-            if (cout_start >= cout_end) {
+            if (cout_start >= cout_end)
+            {
                 cout_start = cout_end = 0;
                 traffic("<");
-            } else {
+            }
+            else
+            {
                 traffic("<.");
             }
         }
 
-        if (FD_ISSET(target, &rlist)) {
-            bytes = recv(target, ws_ctx->cin_buf, DBUFSIZE , 0);
-            if (pipe_error) { break; }
-            if (bytes <= 0) {
+        if (FD_ISSET(target, &rlist))
+        {
+            bytes = recv(target, ws_ctx->cin_buf, DBUFSIZE, 0);
+            if (pipe_error)
+            {
+                break;
+            }
+            if (bytes <= 0)
+            {
                 handler_emsg("target closed connection\n");
                 break;
             }
             cout_start = 0;
-            if (ws_ctx->hybi) {
+            if (ws_ctx->hybi)
+            {
                 cout_end = encode_hybi(ws_ctx->cin_buf, bytes,
-                                   ws_ctx->cout_buf, BUFSIZE, ws_ctx->opcode);
-            } else {
+                                       ws_ctx->cout_buf, BUFSIZE, ws_ctx->opcode);
+            }
+            else
+            {
                 cout_end = encode_hixie(ws_ctx->cin_buf, bytes,
-                                    ws_ctx->cout_buf, BUFSIZE);
+                                        ws_ctx->cout_buf, BUFSIZE);
             }
             /*
             printf("encoded: ");
@@ -180,17 +238,23 @@ void do_proxy(ws_ctx_t *ws_ctx, int target) {
             }
             printf("\n");
             */
-            if (cout_end < 0) {
+            if (cout_end < 0)
+            {
                 handler_emsg("encoding error\n");
                 break;
             }
             traffic("{");
         }
 
-        if (FD_ISSET(client, &rlist)) {
-            bytes = ws_recv(ws_ctx, ws_ctx->tin_buf + tin_end, BUFSIZE-1);
-            if (pipe_error) { break; }
-            if (bytes <= 0) {
+        if (FD_ISSET(client, &rlist))
+        {
+            bytes = ws_recv(ws_ctx, ws_ctx->tin_buf + tin_end, BUFSIZE - 1);
+            if (pipe_error)
+            {
+                break;
+            }
+            if (bytes <= 0)
+            {
                 handler_emsg("client closed connection\n");
                 break;
             }
@@ -202,19 +266,23 @@ void do_proxy(ws_ctx_t *ws_ctx, int target) {
             }
             printf("\n");
             */
-            if (ws_ctx->hybi) {
+            if (ws_ctx->hybi)
+            {
                 len = decode_hybi(ws_ctx->tin_buf + tin_start,
-                                  tin_end-tin_start,
-                                  ws_ctx->tout_buf, BUFSIZE-1,
+                                  tin_end - tin_start,
+                                  ws_ctx->tout_buf, BUFSIZE - 1,
                                   &opcode, &left);
-            } else {
+            }
+            else
+            {
                 len = decode_hixie(ws_ctx->tin_buf + tin_start,
-                                   tin_end-tin_start,
-                                   ws_ctx->tout_buf, BUFSIZE-1,
+                                   tin_end - tin_start,
+                                   ws_ctx->tout_buf, BUFSIZE - 1,
                                    &opcode, &left);
             }
 
-            if (opcode == 8) {
+            if (opcode == 8)
+            {
                 handler_msg("client sent orderly close frame\n");
                 break;
             }
@@ -227,14 +295,18 @@ void do_proxy(ws_ctx_t *ws_ctx, int target) {
             printf("\n");
             */
 
-            if (len < 0) {
+            if (len < 0)
+            {
                 handler_emsg("decoding error\n");
                 break;
             }
-            if (left) {
+            if (left)
+            {
                 tin_start = tin_end - left;
                 //printf("partial frame from client");
-            } else {
+            }
+            else
+            {
                 tin_start = 0;
                 tin_end = 0;
             }
@@ -246,25 +318,30 @@ void do_proxy(ws_ctx_t *ws_ctx, int target) {
     }
 }
 
-void proxy_handler(ws_ctx_t *ws_ctx) {
+void proxy_handler(ws_ctx_t *ws_ctx)
+{
     int tsock = 0;
     struct sockaddr_in taddr = {0};
-    struct sockaddr_in	addr = {0};
+    struct sockaddr_in addr = {0};
     char protocol = 't';
     char dummy;
 
-    sscanf(ws_ctx->headers->path+1, "%c%c%[^:]%c%d" , &protocol, &dummy, target_host, &dummy,&target_port);
+    sscanf(ws_ctx->headers->path + 1, "%c%c%[^:]%c%d", &protocol, &dummy, target_host, &dummy, &target_port);
 
-    if (target_ports != NULL) {
+    if (target_ports != NULL)
+    {
         int *p;
         int found = 0;
-        for (p = target_ports; *p; p++) {
-            if (*p == target_port) {
+        for (p = target_ports; *p; p++)
+        {
+            if (*p == target_port)
+            {
                 found = 1;
                 break;
             }
         }
-        if (!found) {
+        if (!found)
+        {
             handler_emsg("Rejecting connection to non-whitelisted port: '%d'\n",
                          target_port);
             return;
@@ -272,21 +349,26 @@ void proxy_handler(ws_ctx_t *ws_ctx) {
     }
 
     /* Resolve target address */
-    if (resolve_host(&taddr.sin_addr, target_host) < -1) {
+    if (resolve_host(&taddr.sin_addr, target_host) < -1)
+    {
         handler_emsg("Could not resolve target address: %s\n",
                      strerror(errno));
     }
 
-    if (target_hosts != NULL) {
+    if (target_hosts != NULL)
+    {
         int *p;
         int found = 0;
-        for (p = target_hosts; *p; p++) {
-            if (*p == *((int*)&taddr.sin_addr)) {
+        for (p = target_hosts; *p; p++)
+        {
+            if (*p == *((int *)&taddr.sin_addr))
+            {
                 found = 1;
                 break;
             }
         }
-        if (!found) {
+        if (!found)
+        {
             handler_emsg("Rejecting connection to non-whitelisted host: '%s'\n",
                          target_host);
             return;
@@ -295,12 +377,13 @@ void proxy_handler(ws_ctx_t *ws_ctx) {
 
     handler_msg("connecting to: %s:%d via %c\n", target_host, target_port, protocol);
 
-    if( protocol == 'u' )
+    if (protocol == 'u')
         tsock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     else
         tsock = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (tsock < 0) {
+    if (tsock < 0)
+    {
         handler_emsg("Could not create target socket: %s\n",
                      strerror(errno));
         return;
@@ -309,30 +392,34 @@ void proxy_handler(ws_ctx_t *ws_ctx) {
     taddr.sin_family = AF_INET;
     taddr.sin_port = htons(target_port);
 
-    if ( protocol == 't' ) {
-    if (connect(tsock, (struct sockaddr *) &taddr, sizeof(taddr)) < 0) {
-        handler_emsg("Could not connect to target: %s\n",
-                     strerror(errno));
-        close(tsock);
-        return;
-    }
-    }
-    else {
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = 0;
-    addr.sin_family = AF_INET;
-    if( bind( tsock, (void *)&addr, sizeof( addr ) ) < 0 )
+    if (protocol == 't')
     {
-        handler_emsg("Could not bind udp socket: %s\n",
-                     strerror(errno));
-        close(tsock);
-        return;
+        if (connect(tsock, (struct sockaddr *)&taddr, sizeof(taddr)) < 0)
+        {
+            handler_emsg("Could not connect to target: %s\n",
+                         strerror(errno));
+            close(tsock);
+            return;
+        }
     }
-    ws_ctx->udpaddr = taddr;
-    ws_ctx->udp = 1;
+    else
+    {
+        addr.sin_addr.s_addr = INADDR_ANY;
+        addr.sin_port = 0;
+        addr.sin_family = AF_INET;
+        if (bind(tsock, (void *)&addr, sizeof(addr)) < 0)
+        {
+            handler_emsg("Could not bind udp socket: %s\n",
+                         strerror(errno));
+            close(tsock);
+            return;
+        }
+        ws_ctx->udpaddr = taddr;
+        ws_ctx->udp = 1;
     }
 
-    if ((settings.verbose) && (! settings.daemon)) {
+    if ((settings.verbose) && (!settings.daemon))
+    {
         printf("%s", traffic_legend);
     }
 
@@ -342,216 +429,246 @@ void proxy_handler(ws_ctx_t *ws_ctx) {
     close(tsock);
 }
 
-int load_whitelist_port() {
-  printf("loading port whitelist '%s'\n", settings.whitelist_port);
-  FILE *whitelist = fopen(settings.whitelist_port, "r");
-  if (whitelist == NULL) {
-    fprintf(stderr, "Error opening whitelist file '%s':\n\t%s\n",
-          settings.whitelist_port, strerror(errno));
-    return -1;
-  }
+int load_whitelist_port()
+{
+    printf("loading port whitelist '%s'\n", settings.whitelist_port);
+    FILE *whitelist = fopen(settings.whitelist_port, "r");
+    if (whitelist == NULL)
+    {
+        fprintf(stderr, "Error opening whitelist file '%s':\n\t%s\n",
+                settings.whitelist_port, strerror(errno));
+        return -1;
+    }
 
-  const int tplen_grow = 512;
-  int tplen = tplen_grow, tpcount = 0;
-  target_ports = (int*)malloc(tplen*sizeof(int));
-  if (target_ports == NULL) {
-    fprintf(stderr, "Whitelist port malloc error");
-    return -2;
-  }
+    const int tplen_grow = 512;
+    int tplen = tplen_grow, tpcount = 0;
+    target_ports = (int *)malloc(tplen * sizeof(int));
+    if (target_ports == NULL)
+    {
+        fprintf(stderr, "Whitelist port malloc error");
+        return -2;
+    }
 
-  char *line = NULL;
-  ssize_t n = 0, nread = 0;
-  while ((nread = getline(&line, &n, whitelist)) > 0) {
-      if (line[0] == '\n') continue;
-      line[nread-1] = '\x00';
-      long int port = strtol(line, NULL, 10);
-      if (port < 1 || port > 65535) {
-          fprintf(stderr,
-            "Whitelist port '%s' is not between valid range 1 and 65535", line);
-          return -3;
-      }
-      tpcount++;
-      if (tpcount >= tplen) {
-          tplen += tplen_grow;
-          target_ports = (int*)realloc(target_ports, tplen*sizeof(int));
-          if (target_ports == NULL) {
-              fprintf(stderr, "Whitelist port realloc error");
-              return -2;
-          }
-      }
-      target_ports[tpcount-1] = port;
-  }
-  if (line != NULL) free(line);
+    char *line = NULL;
+    ssize_t n = 0, nread = 0;
+    while ((nread = getline(&line, &n, whitelist)) > 0)
+    {
+        if (line[0] == '\n')
+            continue;
+        line[nread - 1] = '\x00';
+        long int port = strtol(line, NULL, 10);
+        if (port < 1 || port > 65535)
+        {
+            fprintf(stderr,
+                    "Whitelist port '%s' is not between valid range 1 and 65535", line);
+            return -3;
+        }
+        tpcount++;
+        if (tpcount >= tplen)
+        {
+            tplen += tplen_grow;
+            target_ports = (int *)realloc(target_ports, tplen * sizeof(int));
+            if (target_ports == NULL)
+            {
+                fprintf(stderr, "Whitelist port realloc error");
+                return -2;
+            }
+        }
+        target_ports[tpcount - 1] = port;
+    }
+    if (line != NULL)
+        free(line);
 
-  if (tpcount == 0) {
-      fprintf(stderr, "0 ports read from whitelist file '%s'\n",
-                      settings.whitelist_port);
-      return -4;
-  }
+    if (tpcount == 0)
+    {
+        fprintf(stderr, "0 ports read from whitelist file '%s'\n",
+                settings.whitelist_port);
+        return -4;
+    }
 
-  target_ports = (int*)realloc(target_ports, (tpcount + 1)*sizeof(int));
-  if (target_ports == NULL) {
-      fprintf(stderr, "Whitelist port realloc error");
-      return -2;
-  }
-  target_ports[tpcount] = 0;
-  return 0;
+    target_ports = (int *)realloc(target_ports, (tpcount + 1) * sizeof(int));
+    if (target_ports == NULL)
+    {
+        fprintf(stderr, "Whitelist port realloc error");
+        return -2;
+    }
+    target_ports[tpcount] = 0;
+    return 0;
 }
 
-int load_whitelist_host() {
-  printf("loading host whitelist '%s'\n", settings.whitelist_host);
-  FILE *whitelist = fopen(settings.whitelist_host, "r");
-  if (whitelist == NULL) {
-    fprintf(stderr, "Error opening whitelist file '%s':\n\t%s\n",
-          settings.whitelist_host, strerror(errno));
-    return -1;
-  }
+int load_whitelist_host()
+{
+    printf("loading host whitelist '%s'\n", settings.whitelist_host);
+    FILE *whitelist = fopen(settings.whitelist_host, "r");
+    if (whitelist == NULL)
+    {
+        fprintf(stderr, "Error opening whitelist file '%s':\n\t%s\n",
+                settings.whitelist_host, strerror(errno));
+        return -1;
+    }
 
-  const int tplen_grow = 512;
-  int tplen = tplen_grow, tpcount = 0;
-  target_hosts = (int*)malloc(tplen*sizeof(int));
-  if (target_hosts == NULL) {
-    fprintf(stderr, "Whitelist port malloc error");
-    return -2;
-  }
+    const int tplen_grow = 512;
+    int tplen = tplen_grow, tpcount = 0;
+    target_hosts = (int *)malloc(tplen * sizeof(int));
+    if (target_hosts == NULL)
+    {
+        fprintf(stderr, "Whitelist port malloc error");
+        return -2;
+    }
 
-  char *line = NULL;
-  ssize_t n = 0, nread = 0;
-  while ((nread = getline(&line, &n, whitelist)) > 0) {
-      if (line[0] == '\n') continue;
-      line[nread-1] = '\x00';
-      int host;
-      
-      if (resolve_host((struct in_addr *)&host, line) < -1 ) {
-          fprintf(stderr,
-            "Whitelist host '%s': failed to resolve\n", line);
-          //return -3;
-          continue;
-      }
-      tpcount++;
-      if (tpcount >= tplen) {
-          tplen += tplen_grow;
-          target_hosts = (int*)realloc(target_hosts, tplen*sizeof(int));
-          if (target_hosts == NULL) {
-              fprintf(stderr, "Whitelist port realloc error\n");
-              return -2;
-          }
-      }
-      target_hosts[tpcount-1] = host;
-  }
-  if (line != NULL) free(line);
+    char *line = NULL;
+    ssize_t n = 0, nread = 0;
+    while ((nread = getline(&line, &n, whitelist)) > 0)
+    {
+        if (line[0] == '\n')
+            continue;
+        line[nread - 1] = '\x00';
+        int host;
 
-  if (tpcount == 0) {
-      fprintf(stderr, "0 ports read from whitelist file '%s'\n",
-                      settings.whitelist_port);
-      return -4;
-  }
+        if (resolve_host((struct in_addr *)&host, line) < -1)
+        {
+            fprintf(stderr,
+                    "Whitelist host '%s': failed to resolve\n", line);
+            //return -3;
+            continue;
+        }
+        tpcount++;
+        if (tpcount >= tplen)
+        {
+            tplen += tplen_grow;
+            target_hosts = (int *)realloc(target_hosts, tplen * sizeof(int));
+            if (target_hosts == NULL)
+            {
+                fprintf(stderr, "Whitelist port realloc error\n");
+                return -2;
+            }
+        }
+        target_hosts[tpcount - 1] = host;
+    }
+    if (line != NULL)
+        free(line);
 
-  target_hosts = (int*)realloc(target_hosts, (tpcount + 1)*sizeof(int));
-  if (target_hosts == NULL) {
-      fprintf(stderr, "Whitelist port realloc error\n");
-      return -2;
-  }
-  target_hosts[tpcount] = 0;
-  return 0;
+    if (tpcount == 0)
+    {
+        fprintf(stderr, "0 ports read from whitelist file '%s'\n",
+                settings.whitelist_port);
+        return -4;
+    }
+
+    target_hosts = (int *)realloc(target_hosts, (tpcount + 1) * sizeof(int));
+    if (target_hosts == NULL)
+    {
+        fprintf(stderr, "Whitelist port realloc error\n");
+        return -2;
+    }
+    target_hosts[tpcount] = 0;
+    return 0;
 }
 
-
-// ***** Main function
 int main(int argc, char *argv[])
 {
     int fd, c, option_index = 0;
     char *found;
-    
-    configfile();
-    
+
+    configfile(settings);
+
     static struct option long_options[] = {
-        {"verbose",   no_argument,       0,                 'v'},
-        {"daemon",    no_argument,       0,                 'd'},
+        {"verbose", no_argument, 0, 'v'},
+        {"daemon", no_argument, 0, 'd'},
         /* ---- */
-        {"whitelist-ports", required_argument, 0,           'P'},
-        {"whitelist-hosts", required_argument, 0,           'W'},
-        {"pid",       required_argument, 0,                 'p'},
-        {0, 0, 0, 0}
-    };
+        {"whitelist-ports", required_argument, 0, 'P'},
+        {"whitelist-hosts", required_argument, 0, 'W'},
+        {"pid", required_argument, 0, 'p'},
+        {0, 0, 0, 0}};
 
     settings.pattern = "/%d";
     settings.pid = "/var/run/websockify.pid";
 
-    while (1) {
-        c = getopt_long (argc, argv, "vdW:p:P:",
-                         long_options, &option_index);
+    while (1)
+    {
+        c = getopt_long(argc, argv, "vdW:p:P:",
+                        long_options, &option_index);
 
         /* Detect the end */
-        if (c == -1) break;
+        if (c == -1)
+            break;
 
-        switch (c) {
-            case 0:
-                break; // ignore
-            case 1:
-                break; // ignore
-            case 'v':
-                settings.verbose = 1;
-                break;
-            case 'd':
-                settings.daemon = 1;
-                break;
-            case 'W':
-                settings.whitelist_host = realpath(optarg, NULL);
-                if (! settings.whitelist_host) {
-                    usage("No whitelist file at %s\n", optarg);
-                }
-                break;
-            case 'P':
-                settings.whitelist_port = realpath(optarg, NULL);
-                if (! settings.whitelist_port) {
-                    usage("No whitelist file at %s\n", optarg);
-                }
-                break;
-            case 'p':
-                settings.pid = optarg;
-                break;
-            default:
-                usage(" ");
+        switch (c)
+        {
+        case 0:
+            break; // ignore
+        case 1:
+            break; // ignore
+        case 'v':
+            settings.verbose = 1;
+            break;
+        case 'd':
+            settings.daemon = 1;
+            break;
+        case 'W':
+            settings.whitelist_host = realpath(optarg, NULL);
+            if (!settings.whitelist_host)
+            {
+                usage("No whitelist file at %s\n", optarg);
+            }
+            break;
+        case 'P':
+            settings.whitelist_port = realpath(optarg, NULL);
+            if (!settings.whitelist_port)
+            {
+                usage("No whitelist file at %s\n", optarg);
+            }
+            break;
+        case 'p':
+            settings.pid = optarg;
+            break;
+        default:
+            usage(" ");
         }
     }
 
-    if ((argc-optind) != 1) {
+    if ((argc - optind) != 1)
+    {
         usage("Invalid number of arguments\n");
     }
 
     found = strstr(argv[optind], ":");
-    if (found) {
-        memcpy(settings.listen_host, argv[optind], found-argv[optind]);
-        settings.listen_port = strtol(found+1, NULL, 10);
-    } else {
+    if (found)
+    {
+        memcpy(settings.listen_host, argv[optind], found - argv[optind]);
+        settings.listen_port = strtol(found + 1, NULL, 10);
+    }
+    else
+    {
         settings.listen_host[0] = '\0';
         settings.listen_port = strtol(argv[optind], NULL, 10);
     }
     optind++;
-    if (settings.listen_port == 0) {
+    if (settings.listen_port == 0)
+    {
         usage("Could not parse listen_port\n");
     }
 
-    if (!found && settings.whitelist_host != NULL) {
-        if (load_whitelist_host()) {
-          usage("Whitelist hosts error.");
+    if (!found && settings.whitelist_host != NULL)
+    {
+        if (load_whitelist_host())
+        {
+            usage("Whitelist hosts error.");
         }
-
     }
 
-    if (!found && settings.whitelist_port != NULL) {
-        if (load_whitelist_port()) {
-          usage("Whitelist ports error.");
+    if (!found && settings.whitelist_port != NULL)
+    {
+        if (load_whitelist_port())
+        {
+            usage("Whitelist ports error.");
         }
-
     }
-    
+
     //printf("  verbose: %d\n",   settings.verbose);
     //printf("  daemon: %d\n",    settings.daemon);
     //printf("  run_once: %d\n",  settings.run_once);
 
     settings.handler = proxy_handler;
     start_server();
-
 }

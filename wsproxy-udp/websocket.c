@@ -1,10 +1,12 @@
 /*
  * WebSocket lib with support for "wss://" encryption.
+ * Copyright 2010 Joel Martin
+ * Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
+ *
  * You can make a cert/key with openssl using:
  * openssl req -new -x509 -days 365 -nodes -out self.pem -keyout self.pem
+ * as taken from http://docs.python.org/dev/library/ssl.html#certificates
  */
-
-
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +27,11 @@
 int ws_b64_ntop(u_char const *src, size_t srclength, char *target, size_t targsize);
 int ws_b64_pton(char const *src, u_char *target, size_t targsize);
 
+/*
+ * Global state
+ *
+ *   Warning: not thread safe
+ */
 int ssl_initialized = 0;
 int pipe_error = 0;
 settings_t settings;
@@ -591,6 +598,9 @@ ws_ctx_t *do_handshake(int sock) {
 
     return ws_ctx;
 }
+
+int load_whitelist_host();
+int load_whitelist_port();
 
 
 void signal_handler(int sig) {

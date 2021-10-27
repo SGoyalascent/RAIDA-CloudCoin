@@ -1,5 +1,5 @@
 TARGETS=wsproxy
-CFLAGS+=-fPIC
+CFLAGS += -fPIC
 
 all: $(TARGETS)
 
