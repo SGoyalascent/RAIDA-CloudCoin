@@ -12,7 +12,6 @@
 #include <errno.h>
 #include <limits.h>
 #include <getopt.h>
-//#include <fstream>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -22,6 +21,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include "websocket.h"
+//#include "websocketlib.h"
 
 char traffic_legend[] = "\n\
 Traffic Legend:\n\
@@ -47,10 +47,10 @@ char USAGE[] = "Usage: wsproxy [options] "
 #define usage(fmt, args...)               \
     do                                    \
     {                                     \
-        fprintf(stderr, "%s\n\n", USAGE); \
-        fprintf(stderr, fmt, ##args);     \
-        exit(1);                          \
-    } while (0)
+        fprintf(stderr, "%s\n\n", USAGE);   \
+        fprintf(stderr, fmt, ## args);      \
+        exit(1);                            \
+    } while (0)   
 
 char target_host[256];
 int target_port;
@@ -73,7 +73,7 @@ int decode_hybi(unsigned char *src, size_t srclength,
 int resolve_host(struct in_addr *sin_addr, const char *hostname);
 void start_server();
 
-void configfile(settings_t settings)
+void configfile()
 {
     FILE *myfile = fopen("Config.txt", "r");
     fscanf(myfile, "listen_port=%d target_port=%d target_host=%s", &settings.listen_port, &target_port, target_host);
@@ -569,8 +569,20 @@ int main(int argc, char *argv[])
 {
     int fd, c, option_index = 0;
     char *found;
+    
+    printf("argc = %d\n", argc);
+    printf("argv[0] = %s\n", argv[0]);
 
-    configfile(settings);
+    int i = argc;
+    while((i--) > 1) {
+        printf("argv = %s\n", argv[i]);
+    }
+
+    configfile();
+    
+    printf("Listen Port: %d\n", settings.listen_port);
+    printf("Target Port: %d\n", target_port);
+    printf("Target Host: %s\n", target_host); 
 
     static struct option long_options[] = {
         {"verbose", no_argument, 0, 'v'},
@@ -583,11 +595,13 @@ int main(int argc, char *argv[])
 
     settings.pattern = "/%d";
     settings.pid = "/var/run/websockify.pid";
-
+//***********************************************//
     while (1)
     {
+        
         c = getopt_long(argc, argv, "vdW:p:P:",
                         long_options, &option_index);
+
 
         /* Detect the end */
         if (c == -1)
@@ -625,27 +639,44 @@ int main(int argc, char *argv[])
         default:
             usage(" ");
         }
+
     }
 
+    printf("Optind = %d\n", optind);
+
+//******************************//
+    /*
     if ((argc - optind) != 1)
     {
         usage("Invalid number of arguments\n");
     }
+    */
 
+//***************************************//
+    /*
     found = strstr(argv[optind], ":");
+    printf("found: %s\n", found); 
+
     if (found)
     {
         memcpy(settings.listen_host, argv[optind], found - argv[optind]);
         settings.listen_port = strtol(found + 1, NULL, 10);
+        printf("Listen Port: %d\n", settings.listen_port);
+        
     }
     else
     {
         settings.listen_host[0] = '\0';
         settings.listen_port = strtol(argv[optind], NULL, 10);
+        printf("Listen Port: %d\n", settings.listen_port);
     }
+
     optind++;
+    */
+//*********************************************//
     if (settings.listen_port == 0)
     {
+        printf("Listen Port: %d\n", settings.listen_port);
         usage("Could not parse listen_port\n");
     }
 
@@ -665,9 +696,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    //printf("  verbose: %d\n",   settings.verbose);
-    //printf("  daemon: %d\n",    settings.daemon);
-    //printf("  run_once: %d\n",  settings.run_once);
+    printf("  verbose: %d\n",   settings.verbose);
+    printf("  daemon: %d\n",    settings.daemon);
+    printf("  run_once: %d\n",  settings.run_once);
 
     settings.handler = proxy_handler;
     start_server();
