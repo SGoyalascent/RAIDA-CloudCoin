@@ -21,7 +21,6 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include "websocket.h"
-//#include "websocketlib.h"
 
 char traffic_legend[] = "\n\
 Traffic Legend:\n\
@@ -52,6 +51,8 @@ char USAGE[] = "Usage: wsproxy [options] "
         exit(1);                            \
     } while (0)   
 
+
+
 char target_host[256];
 int target_port;
 int *target_ports;
@@ -59,19 +60,6 @@ int *target_hosts;
 extern int pipe_error;
 extern settings_t settings;
 
-void traffic(char * token);
-int encode_hixie(u_char const *src, size_t srclength,
-                 char *target, size_t targsize);
-int encode_hybi(u_char const *src, size_t srclength,
-                char *target, size_t targsize, unsigned int opcode);
-int decode_hixie(char *src, size_t srclength,
-                 u_char *target, size_t targsize,
-                 unsigned int *opcode, unsigned int *left);
-int decode_hybi(unsigned char *src, size_t srclength,
-                u_char *target, size_t targsize,
-                unsigned int *opcode, unsigned int *left);
-int resolve_host(struct in_addr *sin_addr, const char *hostname);
-void start_server();
 
 void configfile()
 {
@@ -86,12 +74,14 @@ void do_proxy(ws_ctx_t *ws_ctx, int target)
     fd_set rlist, wlist, elist;
     struct timeval tv;
     int i, maxfd, client = ws_ctx->sockfd;
-    unsigned int opcode, left, ret;
-    unsigned int tout_start, tout_end, cout_start, cout_end;
+    unsigned int opcode, left;
+    int ret;
+    unsigned int tout_start, tout_end;
+    int cout_start, cout_end;
     unsigned int tin_start, tin_end;
     ssize_t len, bytes;
 
-    tout_start = tout_end = cout_start = cout_end;
+    tout_start = tout_end = cout_start = cout_end = 0;
     tin_start = tin_end = 0;
     maxfd = client > target ? client + 1 : target + 1;
 
@@ -152,7 +142,7 @@ void do_proxy(ws_ctx_t *ws_ctx, int target)
         }
         else if (ret == 0)
         {
-            //handler_emsg("select timeout\n");
+            handler_emsg("select timeout\n");
             continue;
         }
 
@@ -450,7 +440,8 @@ int load_whitelist_port()
     }
 
     char *line = NULL;
-    ssize_t n = 0, nread = 0;
+    size_t n = 0;
+    ssize_t nread = 0;
     while ((nread = getline(&line, &n, whitelist)) > 0)
     {
         if (line[0] == '\n')
@@ -517,7 +508,8 @@ int load_whitelist_host()
     }
 
     char *line = NULL;
-    ssize_t n = 0, nread = 0;
+    size_t n = 0;
+    ssize_t nread = 0;
     while ((nread = getline(&line, &n, whitelist)) > 0)
     {
         if (line[0] == '\n')
@@ -569,6 +561,7 @@ int main(int argc, char *argv[])
 {
     int fd, c, option_index = 0;
     char *found;
+    //  static int ssl_only = 0, daemon = 0, run_once = 0, verbose = 0; 
     
     printf("argc = %d\n", argc);
     printf("argv[0] = %s\n", argv[0]);
@@ -593,8 +586,10 @@ int main(int argc, char *argv[])
         {"pid", required_argument, 0, 'p'},
         {0, 0, 0, 0}};
 
+
     settings.pattern = "/%d";
     settings.pid = "/var/run/websockify.pid";
+
 //***********************************************//
     while (1)
     {
@@ -653,13 +648,13 @@ int main(int argc, char *argv[])
     */
 
 //***************************************//
-    /*
+
     found = strstr(argv[optind], ":");
     printf("found: %s\n", found); 
-
+    /*
     if (found)
     {
-        memcpy(settings.listen_host, argv[optind], found - argv[optind]);
+        memcpy(settings.listen_host, argv[optind], sizeof(settings.listen_host));
         settings.listen_port = strtol(found + 1, NULL, 10);
         printf("Listen Port: %d\n", settings.listen_port);
         

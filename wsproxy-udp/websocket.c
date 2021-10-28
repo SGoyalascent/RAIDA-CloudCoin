@@ -36,6 +36,9 @@ int ssl_initialized = 0;
 int pipe_error = 0;
 settings_t settings;
 
+int load_whitelist_port();
+int load_whitelist_host();
+
 void traffic(char *token)
 {
     if ((settings.verbose) && (!settings.daemon))
@@ -289,13 +292,13 @@ int decode_hybi(unsigned char *src, size_t srclength,
     *left = srclength;
     frame = src;
 
-    //printf("Deocde new frame\n");
+    printf("Deocde new frame\n");
     while (1)
     {
         // Need at least two bytes of the header
         // Find beginning of next frame. First time hdr_length, masked and
         // payload_length are zero
-        frame += hdr_length + 4 * masked + payload_length;
+        //frame += hdr_length + 4 * masked + payload_length;
         //printf("frame[0..3]: 0x%x 0x%x 0x%x 0x%x (tot: %d)\n",
         //       (unsigned char) frame[0],
         //       (unsigned char) frame[1],
@@ -304,13 +307,13 @@ int decode_hybi(unsigned char *src, size_t srclength,
 
         if (frame > src + srclength)
         {
-            //printf("Truncated frame from client, need %d more bytes\n", frame - (src + srclength) );
+            printf("Truncated frame from client, need %d more bytes\n", frame - (src + srclength) );
             break;
         }
         remaining = (src + srclength) - frame;
         if (remaining < 2)
         {
-            //printf("Truncated frame header from client\n");
+            printf("Truncated frame header from client\n");
             break;
         }
         framecount++;
@@ -344,7 +347,7 @@ int decode_hybi(unsigned char *src, size_t srclength,
         {
             continue;
         }
-        //printf("    payload_length: %u, raw remaining: %u\n", payload_length, remaining);
+        printf(" payload_length: %u, raw remaining: %u\n", payload_length, remaining);
         payload = frame + hdr_length + 4 * masked;
 
         if (*opcode != OPCODE_TEXT && *opcode != OPCODE_BINARY)
@@ -400,7 +403,7 @@ int decode_hybi(unsigned char *src, size_t srclength,
         payload[payload_length] = save_char;
         target_offset += len;
 
-        //printf("    len %d, raw %s\n", len, frame);
+        printf("    len %d, raw %s\n", len, frame);
     }
 
     if (framecount > 1)
@@ -496,6 +499,7 @@ int parse_handshake(ws_ctx_t *ws_ctx, char *handshake)
         headers->connection[end - start] = '\0';
 
         start = strstr(handshake, "\r\nSec-WebSocket-Protocol: ");
+
         if (!start)
         {
             return 0;
@@ -602,7 +606,7 @@ static void gen_sha1(headers_t *headers, char *target)
     SHA1Final(hash, &c);
 
     r = ws_b64_ntop(hash, sizeof hash, target, HYBI10_ACCEPTHDRLEN);
-    //assert(r == HYBI10_ACCEPTHDRLEN - 1);
+    assert(r == HYBI10_ACCEPTHDRLEN - 1);
 }
 
 ws_ctx_t *do_handshake(int sock)
@@ -670,7 +674,7 @@ ws_ctx_t *do_handshake(int sock)
         usleep(10);
     }
 
-    //handler_msg("handshake: %s\n", handshake);
+    handler_msg("handshake: %s\n", handshake);
     if (!parse_handshake(ws_ctx, handshake))
     {
         handler_emsg("Invalid WS request\n");
@@ -679,7 +683,7 @@ ws_ctx_t *do_handshake(int sock)
     }
 
     headers = ws_ctx->headers;
-
+    
     if (strstr(headers->protocols, "binary"))
     {
         ws_ctx->opcode = OPCODE_BINARY;
@@ -689,13 +693,13 @@ ws_ctx_t *do_handshake(int sock)
     {
         ws_ctx->opcode = OPCODE_TEXT;
         response_protocol = "base64";
-    }
+    } 
     else
     {
         handler_emsg("Invalid protocol '%s', expecting 'binary' or 'base64'\n",
                      headers->protocols);
         return NULL;
-    }
+    }  */
 
     if (ws_ctx->hybi > 0)
     {
@@ -721,7 +725,7 @@ ws_ctx_t *do_handshake(int sock)
                 headers->host, headers->path, pre, "base64", trailer);
     }
 
-    //handler_msg("response: %s\n", response);
+    handler_msg("response: %s\n", response);
     ws_send(ws_ctx, response, strlen(response));
 
     return ws_ctx;
@@ -890,13 +894,12 @@ void start_server()
             {
                 if (ws_ctx == NULL)
                 {
-                    // Not a real WebSocket connection
+                     handler_msg("Not a real WebSocket connection");
                     continue;
                 }
                 else
                 {
-                    // Successful connection, stop listening for new
-                    // connections
+                    handler_msg("Successful connection, stop listening for new connections");
                     close(lsock);
                 }
             }

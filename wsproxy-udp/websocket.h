@@ -1,7 +1,9 @@
 #include <string.h>
 #include <stdlib.h>
+#include <openssl/ssl.h>
 #define BUFSIZE 65536
 #define DBUFSIZE (BUFSIZE * 3) / 4 - 20
+#define DEBUG 1
 
 #define SERVER_HANDSHAKE_HIXIE "HTTP/1.1 101 Web Socket Protocol Handshake\r\n\
 Upgrade: WebSocket\r\n\
@@ -17,6 +19,7 @@ Connection: Upgrade\r\n\
 Sec-WebSocket-Accept: %s\r\n\
 Sec-WebSocket-Protocol: %s\r\n\
 \r\n"
+
 
 #define HYBI_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -70,6 +73,7 @@ typedef struct {
     char *pid;
 } settings_t;
 
+int resolve_host(struct in_addr *sin_addr, const char *hostname);
 
 ssize_t ws_recv(ws_ctx_t *ctx, void *buf, size_t len);
 
@@ -88,3 +92,23 @@ ssize_t ws_send(ws_ctx_t *ctx, const void *buf, size_t len);
 #define handler_msg(...) gen_handler_msg(stdout, __VA_ARGS__);
 #define handler_emsg(...) gen_handler_msg(stderr, __VA_ARGS__);
 
+#define debug_print(fmt, ...)                                 \
+        do {                                              \
+            if (DEBUG)                                       \
+        fprintf(stderr, "%s:%d:%s(): " fmt, __FILE__, __LINE__, __func__, __VA_ARGS__);  \
+        } while (0)
+
+
+void traffic(char * token);
+int encode_hixie(u_char const *src, size_t srclength,
+                 char *target, size_t targsize);
+int encode_hybi(u_char const *src, size_t srclength,
+                char *target, size_t targsize, unsigned int opcode);
+int decode_hixie(char *src, size_t srclength,
+                 u_char *target, size_t targsize,
+                 unsigned int *opcode, unsigned int *left);
+int decode_hybi(unsigned char *src, size_t srclength,
+                u_char *target, size_t targsize,
+                unsigned int *opcode, unsigned int *left);
+
+void start_server();
