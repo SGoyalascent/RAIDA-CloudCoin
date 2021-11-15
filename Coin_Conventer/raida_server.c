@@ -1,13 +1,6 @@
 #include"raida_server.h"
 char execpath[256];
 struct server_config server_config_obj;
-unsigned char shards_config[SHARDS_MAX];
-struct dns_config dns_config_obj[RAIDA_SERVER_MAX];
-struct raida_legacy_config raida_legacy_config_obj[RAIDA_SERVER_MAX];
-struct coin_id coin_id_obj[255];
-struct coin_config *coin_config_obj;
-unsigned int *pages_changed=NULL;
-unsigned int coin_id_cnt;
 //----------------------------------------------------------
 //Welcome message
 //----------------------------------------------------------
@@ -18,7 +11,7 @@ void welcomeMsg() {
 //Loads raida no from raida_no.txt
 //----------------------------------------------------------
 int load_raida_no(){
-	FILE *fp_inp=NULL;
+	FILE *fp_inp = NULL;
 	int size=0,ch;
 	unsigned char buff[24];
 	char path[256];
@@ -40,10 +33,11 @@ int load_raida_no(){
 	if(size == 2){
 		server_config_obj.raida_id = (buff[0]-48)*10;
 		server_config_obj.raida_id+= (buff[1]-48);
-	}else{
+	}
+	else {
 		server_config_obj.raida_id=buff[0]-48;
 	}
-	printf("Raida Id  :-%d \n", server_config_obj.raida_id);
+	printf("Raida_Id:- %d \n", server_config_obj.raida_id);
 	fclose(fp_inp);
 	return 0;
 }
@@ -76,69 +70,6 @@ int load_server_config() {
 	fclose(fp_inp);
 	return 0;
 }
-
-//----------------------------------------------------------
-//Loads legacy configuation from raida_legacy.bin
-//---------------------------------------------------------
-int load_raida_legacy_config() {
-	FILE *fp_inp = NULL;
-	int i = 0,j=0,index=0;
-	unsigned int legacy_port;
-	unsigned char legacy_ip[16];
-	unsigned char buff[RAIDA_SERVER_MAX*(RAIDA_LEGACY_IP_MAX+RAIDA_LEGACY_PORT_MAX)];
-	union coversion{
-		unsigned char data[4];
-		uint32_t val32;
-	}convObj;
-	char path[256];
-	strcpy(path,execpath);
-	strcat(path,"/Data/raida_legacy.bin");
-	if ((fp_inp = fopen(path, "rb")) == NULL) {
-		printf("raida_legacy.bin Cannot be opened , exiting \n");
-		return 1;
-	}
-	if(fread(buff, 1, RAIDA_SERVER_MAX*(RAIDA_LEGACY_IP_MAX+ RAIDA_LEGACY_PORT_MAX), fp_inp)<(RAIDA_SERVER_MAX*(RAIDA_LEGACY_IP_MAX+ RAIDA_LEGACY_PORT_MAX))){
-		printf("Configuration parameters missing in raida_legacy.bin \n");
-		return 1;
-	}
-	printf("------------------------------\n");
-	printf("RAIDA LEGACYs Configuration Details..\n");
-	printf("------------------------------\n");
-	index =0;
-	for (i=0;i<RAIDA_SERVER_MAX;i++) {
-		for (j=0; j<RAIDA_LEGACY_IP_MAX; j++) {
-			legacy_ip[j] = buff[index+j];
-		}
-		legacy_ip[j]='\0';
-		index=index+RAIDA_LEGACY_IP_MAX;
-		convObj.data[RAIDA_LEGACY_PORT_MAX] =0;
-		for (j=0; j<RAIDA_LEGACY_PORT_MAX; j++) {
-			convObj.data[RAIDA_LEGACY_PORT_MAX-1-j] = buff[index+j];
-		}
-		index=index+RAIDA_LEGACY_PORT_MAX;
-		legacy_port = convObj.val32;
-		raida_legacy_config_obj[i].servaddr.sin_port = htons(legacy_port);
-		raida_legacy_config_obj[i].servaddr.sin_addr.s_addr = inet_addr(legacy_ip);
-		printf("Raida :- %d \tdns :- %d.%d.%d.%d   \t Port Number :-% d\n",i+1, legacy_ip[0],legacy_ip[1],legacy_ip[2],legacy_ip[3],legacy_port);
-	}
-	fclose(fp_inp);
-	return 0;
-}
-
-
-//---------------------------------------------------------
-// Adds ticket at the serial_no index
-//--------------------------------------------------------
-void add_ticket(unsigned int coin_id,uint32_t ticket_no,uint32_t sr_no){
-	if(coin_id_obj[coin_id].TICKETS[sr_no]==NULL){
-		coin_id_obj[coin_id].TICKETS[sr_no] = (struct master_ticket  *) malloc(sizeof(struct master_ticket));
-	}
-        coin_id_obj[coin_id].TICKETS[sr_no]->ticket_no = ticket_no;
-	coin_id_obj[coin_id].TICKETS[sr_no]->time_stamp = time(NULL);
-	coin_id_obj[coin_id].TICKETS[sr_no]->raida_claim =0;
-	printf("Ticket no %d added successfully at serial no %d with time stamp %d \n",coin_id_obj[coin_id].TICKETS[sr_no]->ticket_no, sr_no, coin_id_obj[coin_id].TICKETS[sr_no]->time_stamp);
-}
-
 //---------------------------------------------------------
 // Get the current directory path starting from home dir
 //---------------------------------------------------------
@@ -156,9 +87,6 @@ void getexepath()
   strncpy(execpath,buff,slash_pos);
 }
 
-
-
-
 //----------------------------------------------------------
 // main function
 //---------------------------------------------------------
@@ -167,7 +95,7 @@ int main() {
 	welcomeMsg();
 	getexepath();
 	load_raida_no();
-	if(load_server_config() || load_raida_legacy_config() ){
+	if(load_server_config()){
 		exit(0);
 	}
 	init_udp_socket();

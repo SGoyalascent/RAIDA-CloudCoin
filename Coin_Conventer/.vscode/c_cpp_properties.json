@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "E:\\Libraries\\MSYS2_64\\mingw64\\include\\c++\\10.3.0",
+                "E:\\Libraries\\MSYS2_64\\mingw64\\x86_64-w64-mingw32\\include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "intelliSenseMode": "windows-gcc-x64",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "browse": {
+                "path": [
+                    "E:\\Libraries\\MSYS2_64\\mingw64\\x86_64-w64-mingw32\\include",
+                    "${workspaceFolder}"
+                ]
+            },
+            "forcedInclude": [
+                "E:\\Libraries\\MSYS2_64\\mingw64\\x86_64-w64-mingw32\\include\\stdlib.h"
+            ]
+        }
+    ],
+    "version": 4
+}

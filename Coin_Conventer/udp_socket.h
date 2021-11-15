@@ -10,8 +10,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <mysql.h>
 #include "raida_server.h"
-#include "sky_wallet.h"
 //--------------------------------------------------------------------
 #define FRAME_TIME_OUT_SECS		1
 #define UDP_BUFF_SIZE 			65535
@@ -142,24 +142,7 @@
 #define FAIL								251
 #define NO_ERR_CODE	 		   				255
 //----------Command codes-----------------------------------------
-#define CMD_POWN 							0
-#define CMD_DETECT	 						1
-#define CMD_FIND							2
-#define CMD_FIX								3
-#define CMD_ECHO							4
-#define CMD_VALIDATE							5
-#define CMD_POST_KEY						6
-#define CMD_GET_KEY							7
-#define CMD_IDENTIFY							8
-#define CMD_RECOVER						       10
-#define CMD_GET_TICKET 					       11
-#define CMD_VERSION						       15
-#define CMD_NEWS						       16
-#define CMD_LOGS						       17
-#define CMD_BECOME_PRIMARY				       42
-#define CMD_BECOME_MIRROR				       43
-#define CMD_CHECK_UPDATES				       44
-#define CMD_UPGRADE_COIN                    215
+#define CMD_COIN_CONVERTER                    215
 //----------------------------------------------------------------------------
 #define FIND_COIN_FAILED						0
 #define FIND_COIN_AN_PASSED					1
@@ -174,16 +157,13 @@
 #define  FIFO_RESPONSE 						1
 
 extern int sockfd;
-extern unsigned char response_flg;
-extern int32_t key_cnt;
 extern fd_set select_fds;
 extern fd_set select_dns_fds[RAIDA_SERVER_MAX];
 extern struct timeval timeout,dns_timeout[RAIDA_SERVER_MAX];
 extern struct sockaddr_in servaddr, cliaddr;
 extern long time_stamp_before,time_stamp_after;
 extern unsigned char udp_buffer[UDP_BUFF_SIZE], response[RESPONSE_HEADER_MAX],EN_CODES[EN_CODES_MAX];
-extern unsigned char free_thread_running_flg;
-extern pthread_t free_id_ptid;
+
 union coversion{
 	uint32_t val32;
 	unsigned char data[4];
@@ -198,36 +178,17 @@ struct cmd_table {
 	unsigned int request_body_without_coins,bytes_per_coin;
 	void (*cmd_func_ptr)(unsigned int);
 };
+
 extern union coversion snObj;
 
 //------------------------------------------------------------------------
 int listen_request();
-void* listen_request_raida(void *arg);
 void init_en_codes();
 int init_udp_socket();
-void execute_news();
-void execute_version();
-void* free_id_timer_thread(void *);
-void execute_fix(unsigned int,unsigned int);
-void execute_echo(unsigned int);
-void execute_become_primary(unsigned int);
-void execute_become_mirror(unsigned int );
-void execute_check_updates(unsigned int );
-void execute_get_key(unsigned int);
 void process_request(unsigned int);
-void execute_find(unsigned int,unsigned int);
-void execute_logs(unsigned int);
-void execute_free_id(unsigned int);
-void execute_detect(unsigned int,unsigned int);
-void execute_identify(unsigned int,unsigned int);
-void execute_validate(unsigned int,unsigned int);
-void execute_post_key(unsigned int);
-void execute_get_ticket(unsigned int,unsigned int);
-char add_key(char *,uint32_t );
 void send_err_resp_header(int );
 void set_time_out(unsigned char);
-void set_dns_time_out(int,int);
-void execute_pown(unsigned int,unsigned int);
+void prepare_resp_header(unsigned char );
 void send_response(unsigned char ,unsigned int );
 unsigned char validate_request_header(unsigned char *,int );
 unsigned char validate_request_body_general(unsigned int,unsigned int ,int *);
