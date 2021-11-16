@@ -157,12 +157,16 @@
 #define  FIFO_RESPONSE 						1
 
 extern int sockfd;
-extern fd_set select_fds;
-extern fd_set select_dns_fds[RAIDA_SERVER_MAX];
-extern struct timeval timeout,dns_timeout[RAIDA_SERVER_MAX];
+extern unsigned char response_flg;
+extern int32_t key_cnt;
+extern fd_set select_fds;                
+extern fd_set select_dns_fds[RAIDA_SERVER_MAX];                
+extern struct timeval timeout,dns_timeout[RAIDA_SERVER_MAX];     
 extern struct sockaddr_in servaddr, cliaddr;
 extern long time_stamp_before,time_stamp_after;
 extern unsigned char udp_buffer[UDP_BUFF_SIZE], response[RESPONSE_HEADER_MAX],EN_CODES[EN_CODES_MAX];
+extern unsigned char free_thread_running_flg;
+extern pthread_t free_id_ptid;
 
 union coversion{
 	uint32_t val32;

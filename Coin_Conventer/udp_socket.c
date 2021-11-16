@@ -224,7 +224,7 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 	}
 	frames_expected = buff[REQ_FC+1];
 	frames_expected|=(((uint16_t)buff[REQ_FC])<<8);
-	printf("No of frames expected :- %d\n", frames_expected);
+	printf("No. of frames expected :- %d\n", frames_expected);
 	if(frames_expected <=0  || frames_expected > FRAMES_MAX){
 		printf("Invalid frame count  \n");
 		return INVALID_FRAME_CNT;
@@ -319,9 +319,34 @@ void finish_with_error(MYSQL *con)
   exit(1);
 }
 
-void execute_coin_converter(int packet_len){
+void execute_coin_converter(unsigned int packet_len){
 
 //---------------------------------------------------------------
+	
+	//GET TICKET NO.
+
+	int req_body_with_ticket = CH_BYTES_CNT + TK_BYTES_CNT + CMD_END_BYTES_CNT;
+	int req_header_min;
+	unsigned int i=0,index=0,j=0,pass_cnt=0,fail_cnt=0,size;
+	unsigned char status_code,pass_fail[COINS_MAX]={0};
+	uint32_t sr_nos[COINS_MAX],ticket_no;
+	int sr_nos_size = COINS_MAX;
+	if (validate_request_body_general(packet_len,req_body_with_ticket,&req_header_min) ==0){
+		return;
+	}
+
+	index = req_header_min+CH_BYTES_CNT;
+	for(j=0;j<TK_BYTES_CNT;j++)
+		snObj.data[j]=udp_buffer[index+(TK_BYTES_CNT-1-j)];
+	printf("Ticket number %d \n", snObj.val32);
+	ticket_no= snObj.val32;
+	index = RES_HS+TK_BYTES_CNT;
+	size    =  RES_HS+TK_BYTES_CNT;
+	status_code=VALIDATE_TICKET_NOT_FOUND;
+
+	send_response(status_code,size);
+
+//-----------------------------------------------------------------------------
 
 // READ COIN_CONVERTER CONFIG FILE
 
@@ -360,36 +385,38 @@ void execute_coin_converter(int packet_len){
 	
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
 
-	if(mysql_query(con, "SELECT sn FROM fixit_log WHERE rn = $master_ticket") {
+	if(mysql_query(con, "SELECT sn FROM fixit_log WHERE rn = %d", ticket_no) {
         finish_with_error(con);
     }
-
+	int k = 0;
     do {
         MYSQL_RES *result = mysql_store_result(con);
-
         if( result == NULL) {
             printf("No Serial no. associated with the tickets");
             finish_with_error(con);
         }
-
         MYSQL_RQW row = mysql_fetch_row(result);
-
         printf("%s\n", row[0]);
+		sr_nos[k] = row[0];
         //store serial no.
-
         mysql_free_result(result);
-
         status = mysql_next_result(con);
-
         if(status > 0) {
             finish_with_error(con);
         }
+		k++;
     } while(status == 0);
 
 //---------------------------------------------------------------------------
 	
+	//SEND THE SERIAL NO.'S TO THE REQUESTER
+
+	send_response();
+
+//---------------------------------------------------------------------
+
 	//DELETE THE RECORDS FROM THE TABLE
-	if(mysql_query(con, "DELETE FROM fixit_log WHERE rn= $master_ticket")) {
+	if(mysql_query(con, "DELETE FROM fixit_log WHERE rn= %d", ticket_no)) {
         finish_with_error(con);
     }
 
@@ -397,9 +424,13 @@ void execute_coin_converter(int packet_len){
 
 	//UPDATE THE ans TABLE
 	//need to loop until all sn updated
-    if(mysql_query(con, "UPDATE ans SET NN = 2 WHERE SN = $sn AND NN = 1")) {
-        finish_with_error(con);
-    }
+
+	for(int i =0; i < sr_nos_size; i++) {
+
+		if(mysql_query(con, "UPDATE ans SET NN = 2 WHERE SN = %d AND NN = 1", sr_nos[i] )) {
+			finish_with_error(con);
+		}
+	}
 
 //-------------------------------------------------------
 
