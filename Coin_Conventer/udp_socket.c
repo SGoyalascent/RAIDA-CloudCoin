@@ -7,8 +7,6 @@ union coversion snObj;
 struct sockaddr_in servaddr, cliaddr;
 long time_stamp_before,time_stamp_after;
 unsigned char udp_buffer[UDP_BUFF_SIZE],response[RESPONSE_HEADER_MAX],coin_table_id[5],EN_CODES[EN_CODES_MAX]={0};
-
-}
 //-----------------------------------------------------------
 //Init Encryption codes
 //----------------------------------------------------------
@@ -319,36 +317,32 @@ void finish_with_error(MYSQL *con)
   exit(1);
 }
 
-void execute_coin_converter(unsigned int packet_len){
-
-//---------------------------------------------------------------
+void execute_coin_converter(unsigned int packet_len) {
 	
-	//GET TICKET NO.
+	//GET TICKET NO.--------------
 
 	int req_body_with_ticket = CH_BYTES_CNT + TK_BYTES_CNT + CMD_END_BYTES_CNT;
 	int req_header_min;
-	unsigned int i=0,index=0,j=0,pass_cnt=0,fail_cnt=0,size;
-	unsigned char status_code,pass_fail[COINS_MAX]={0};
+	unsigned int i=0,index=0,j=0,size, sr_nos_size;
+	unsigned char status_code;
 	uint32_t sr_nos[COINS_MAX],ticket_no;
-	int sr_nos_size = COINS_MAX;
+	printf("Coin Converter\n");
 	if (validate_request_body_general(packet_len,req_body_with_ticket,&req_header_min) ==0){
+		send_err_resp_header(EMPTY_REQ_BODY);
 		return;
 	}
 
-	index = req_header_min+CH_BYTES_CNT;
-	for(j=0;j<TK_BYTES_CNT;j++)
-		snObj.data[j]=udp_buffer[index+(TK_BYTES_CNT-1-j)];
+	index = req_header_min + CH_BYTES_CNT;
+	for(j=0;j<TK_BYTES_CNT;j++) {
+		snObj.data[j]=udp_buffer[index+(TK_BYTES_CNT-1-j)]; }
 	printf("Ticket number %d \n", snObj.val32);
-	ticket_no= snObj.val32;
+	ticket_no = snObj.val32;
 	index = RES_HS+TK_BYTES_CNT;
 	size    =  RES_HS+TK_BYTES_CNT;
-	status_code=VALIDATE_TICKET_NOT_FOUND;
+	
 
-	send_response(status_code,size);
 
-//-----------------------------------------------------------------------------
-
-// READ COIN_CONVERTER CONFIG FILE
+// READ COIN_CONVERTER CONFIG FILE---------------------
 
 	char Host_ip[256], Database_name[256], Username[256], User_password[256];
     char Encryption_key[256], Mode[256];
@@ -363,12 +357,11 @@ void execute_coin_converter(unsigned int packet_len){
     fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s", Host_ip, Database_name,
                                                   Username, User_password, &listen_port, Encryption_key, Mode);
     fclose(myfile);
-
     printf("Host = %s\n Database = %s\n Username = %s\n Password = %s\n listenport = %d\n encryption_key = %s\n mode = %s\n", Host_ip, Database_name, Username, User_password, &listen_port, Encryption_key, Mode);
 
-//-------------------------------------------------------------
 
-// Initialize a connection to the Database
+// Initialize a connection to the Database---------------------
+
 	MYSQL *con = mysql_init(NULL);
 
     if(con == NULL) {
@@ -381,7 +374,7 @@ void execute_coin_converter(unsigned int packet_len){
 	if(mysql_real_connection(con, Host_ip, Username, Password, Database_name, listen_port, NULL, 0) == NULL) {
 	    finish_with_error(con);
     }
-//--------------------------------------------------------------
+
 	
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
 
@@ -394,6 +387,7 @@ void execute_coin_converter(unsigned int packet_len){
         if( result == NULL) {
             printf("No Serial no. associated with the tickets");
             finish_with_error(con);
+			break;
         }
         MYSQL_RQW row = mysql_fetch_row(result);
         printf("%s\n", row[0]);
@@ -407,11 +401,16 @@ void execute_coin_converter(unsigned int packet_len){
 		k++;
     } while(status == 0);
 
-//---------------------------------------------------------------------------
+	sr_nos_size = k;
 	
-	//SEND THE SERIAL NO.'S TO THE REQUESTER
+	//SEND THE SERIAL NO.'S TO THE REQUESTER-------------
 
-	send_response();
+	if(sr_nos_size == 0) {
+		status_code = SUCCESS; }
+	else {
+		status_code = NO_ERR_CODE;
+	}
+	send_response(status_code, size);
 
 //---------------------------------------------------------------------
 

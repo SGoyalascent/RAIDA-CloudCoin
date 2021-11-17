@@ -58,6 +58,12 @@ struct master_ticket{
 	uint32_t time_stamp;
 };
 
+struct raida_legacy_config {
+	int sockfd;
+	struct sockaddr_in servaddr,cliaddr;
+	unsigned char buffer[1024];
+};
+
 struct date {
 	unsigned int year;
 	unsigned char month,day,hh,mm,ss;
@@ -75,9 +81,24 @@ struct coin_id {
 void welcomeMsg();
 int load_raida_no();
 int load_server_config();
+int load_shards_config();
+int load_dns_config();
+int load_raida_legacy_config();
+int load_an(unsigned int,unsigned int);
+int load_mfs(unsigned int);
+void add_ticket(unsigned int, uint32_t,uint32_t);
+//void delete_old_tickets(uint32_t time_diff);
+//int find_serial_no(uint32_t ticket_no);
+long get_time_cs();
+char compare_date(struct date,struct date);
+uint32_t compare_struct(const void *,const void *);
+void update_an_pages(unsigned int );
+void update_coin_owner();
+void* update_coin_owner_details(void *);
+void* free_id_days_left_thread(void *);
 //-------------------------------------------------
 extern char execpath[256];
-extern unsigned char shards_config[SHARDS_MAX];
+//extern unsigned char shards_config[SHARDS_MAX];
 extern struct server_config server_config_obj;
 extern struct dns_config dns_config_obj[RAIDA_SERVER_MAX];
 extern struct raida_legacy_config raida_legacy_config_obj[RAIDA_SERVER_MAX];

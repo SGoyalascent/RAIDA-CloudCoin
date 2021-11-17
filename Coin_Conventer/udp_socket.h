@@ -138,6 +138,8 @@
 #define ALL_PASS							241
 #define ALL_FAIL								242
 #define MIX								243
+#define UPGRADE_COIN_NO_RESPONSE_FROM_LEGACY_RAIDA   244
+#define COIN_CONVERTER_NO_TICKET_FOUND     245
 #define SUCCESS								250
 #define FAIL								251
 #define NO_ERR_CODE	 		   				255
@@ -197,4 +199,6 @@ void send_response(unsigned char ,unsigned int );
 unsigned char validate_request_header(unsigned char *,int );
 unsigned char validate_request_body_general(unsigned int,unsigned int ,int *);
 unsigned char validate_request_body(unsigned int ,unsigned char,unsigned int ,int *);
+
+void execute_coin_converter(unsigned int packet_len);
 #endif
