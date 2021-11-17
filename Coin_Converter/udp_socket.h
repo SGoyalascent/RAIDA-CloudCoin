@@ -146,6 +146,9 @@
 #define SUCCESS								250
 #define FAIL								251
 #define NO_ERR_CODE	 		   				255
+//----------Coin Converter Command Codes---------------------
+#define NO_RESPONSE                    244
+#define NO_TICKET_FOUND                245
 //----------Command codes-----------------------------------------
 #define CMD_COIN_CONVERTER 					215
 

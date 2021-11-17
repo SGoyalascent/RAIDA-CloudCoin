@@ -336,6 +336,8 @@ void execute_coin_converter(unsigned int packet_len){
 		exit(1);
     }
 	int k = 0;
+	int sr_nos[1024];
+	int status;
     do {
         MYSQL_RES *result = mysql_store_result(con);
         if( result == NULL) {
@@ -350,7 +352,7 @@ void execute_coin_converter(unsigned int packet_len){
 		sr_nos[k] = row[0];
         //store serial no.
         mysql_free_result(result);
-        int status = mysql_next_result(con);
+        status = mysql_next_result(con);
         if(status > 0) {
             printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
@@ -364,9 +366,10 @@ void execute_coin_converter(unsigned int packet_len){
 	//SEND THE SERIAL NO.'S TO THE REQUESTER-------------
 
 	if(sr_nos_size == 0) {
-		status_code = SUCCESS; }
-	else {
-		status_code = NO_ERR_CODE;
+		printf("No Serial no. associated with the tickets");
+		status_code = NO_TICKET_FOUND; }
+	else if(sr_nos_size > 0){
+		status_code = ALL_PASS;
 	}
 	send_response(status_code,size);
 //---------------------------------------------------------------------
