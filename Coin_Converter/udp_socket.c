@@ -310,13 +310,13 @@ void execute_coin_converter(unsigned int packet_len){
 	MYSQL *con = mysql_init(NULL);
 
     if(con == NULL) {
-        fprint(stderr, "%s\n", mysql_error(con));
+        printf(stderr, "%s\n", mysql_error(con));
         exit(1);
     }
 
     //if(mysql_real_connection(con, Host_ip, Username, Password, Database_name, listen_port, unix_socket, flag) == NULL) {
     
-	if(mysql_real_connection(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
+	if(mysql_real_connect(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
 	    fprintf(stderr, "%s\n", mysql_error(con));
 		mysql_close(con);
 		exit(1);
@@ -325,7 +325,7 @@ void execute_coin_converter(unsigned int packet_len){
 	
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
 
-	if(mysql_query(con, "SELECT sn FROM fixit_log WHERE rn = %d", ticket_no) {
+	if(mysql_query(con, "SELECT sn FROM fixit_log WHERE rn = %d", ticket_no)) {
         fprintf(stderr, "%s\n", mysql_error(con));
 		mysql_close(con);
 		exit(1);
