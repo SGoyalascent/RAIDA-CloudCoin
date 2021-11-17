@@ -177,7 +177,6 @@ void* listen_request_raida(void *arg);
 int init_udp_socket();
 void set_time_out(unsigned char);
 void process_request(unsigned int);
-void finish_with_error(MYSQL *con)
 void execute_coin_converter(unsigned int);
 void send_response(unsigned char ,unsigned int );
 void send_err_resp_header(int );
