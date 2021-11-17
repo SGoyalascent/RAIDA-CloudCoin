@@ -272,6 +272,13 @@ void send_response(unsigned char status_code,unsigned int size){
 //---------------------------------------------------------------
 //Coin converter 215
 //---------------------------------------------------------------
+void finish_with_error(MYSQL *con)
+{
+  fprintf(stderr, "%s\n", mysql_error(con));
+  mysql_close(con);
+  exit(1);
+}
+
 void execute_coin_converter(unsigned int packet_len){
 	int req_body_without_coins = CH_BYTES_CNT + CMD_END_BYTES_CNT,bytes_per_coin = SN_BYTES_CNT+AN_BYTES_CNT+PAN_BYTES_CNT;
 	int req_header_min, no_of_coins,ticket_no=0;
@@ -283,5 +290,97 @@ void execute_coin_converter(unsigned int packet_len){
 		return;
 	}
 	
+	//send_response(status_code,size);
+
+
+	// READ COIN_CONVERTER CONFIG FILE---------------------
+
+	char Host_ip[256], Database_name[256], Username[256], User_password[256];
+    char Encryption_key[256], Mode[256];
+	int listen_port;
+
+    printf("Hello User to Coin_Converter\n");
+
+    FILE *myfile = fopen("Coin_Converter.config", "r");
+    if(myfile == NULL) {
+        printf("Config file not found\n");
+    }
+    fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s", Host_ip, Database_name,
+                                                  Username, User_password, &listen_port, Encryption_key, Mode);
+    fclose(myfile);
+    printf("Host = %s\n Database = %s\n Username = %s\n Password = %s\n listenport = %d\n encryption_key = %s\n mode = %s\n", Host_ip, Database_name, Username, User_password, &listen_port, Encryption_key, Mode);
+
+
+// Initialize a connection to the Database---------------------
+
+	MYSQL *con = mysql_init(NULL);
+
+    if(con == NULL) {
+        fprint(stderr, "%s\n", mysql_error(con));
+        exit(1);
+    }
+
+    //if(mysql_real_connection(con, Host_ip, Username, Password, Database_name, listen_port, unix_socket, flag) == NULL) {
+    
+	if(mysql_real_connection(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
+	    finish_with_error(con);
+    }
+
+	
+	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
+
+	if(mysql_query(con, "SELECT sn FROM fixit_log WHERE rn = %d", ticket_no) {
+        finish_with_error(con);
+    }
+	int k = 0;
+    do {
+        MYSQL_RES *result = mysql_store_result(con);
+        if( result == NULL) {
+            printf("No Serial no. associated with the tickets");
+            finish_with_error(con);
+			break;
+        }
+        MYSQL_RQW row = mysql_fetch_row(result);
+        printf("%s\n", row[0]);
+		sr_nos[k] = row[0];
+        //store serial no.
+        mysql_free_result(result);
+        status = mysql_next_result(con);
+        if(status > 0) {
+            finish_with_error(con);
+        }
+		k++;
+    } while(status == 0);
+
+	int sr_nos_size = k;
+
+	//SEND THE SERIAL NO.'S TO THE REQUESTER-------------
+
+	if(sr_nos_size == 0) {
+		status_code = SUCCESS; }
+	else {
+		status_code = NO_ERR_CODE;
+	}
+
 	send_response(status_code,size);
+//---------------------------------------------------------------------
+
+	//DELETE THE RECORDS FROM THE TABLE
+	if(mysql_query(con, "DELETE FROM fixit_log WHERE rn= %d", ticket_no)) {
+        finish_with_error(con);
+    }
+
+//-----------------------------------------------------------------	
+
+	//UPDATE THE ans TABLE
+	//need to loop until all sn updated
+
+	for(int i =0; i < sr_nos_size; i++) {
+
+		if(mysql_query(con, "UPDATE ans SET NN = 2 WHERE SN = %d AND NN = 1", sr_nos[i] )) {
+			finish_with_error(con);
+		}
+	}
+
+//-------------------------------------------------------
 }
