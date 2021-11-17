@@ -272,12 +272,6 @@ void send_response(unsigned char status_code,unsigned int size){
 //---------------------------------------------------------------
 //Coin converter 215
 //---------------------------------------------------------------
-void finish_with_error(MYSQL *con)
-{
-  fprintf(stderr, "%s\n", mysql_error(con));
-  mysql_close(con);
-  exit(1);
-}
 
 void execute_coin_converter(unsigned int packet_len){
 	int req_body_without_coins = CH_BYTES_CNT + CMD_END_BYTES_CNT,bytes_per_coin = SN_BYTES_CNT+AN_BYTES_CNT+PAN_BYTES_CNT;
@@ -323,21 +317,27 @@ void execute_coin_converter(unsigned int packet_len){
     //if(mysql_real_connection(con, Host_ip, Username, Password, Database_name, listen_port, unix_socket, flag) == NULL) {
     
 	if(mysql_real_connection(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
-	    finish_with_error(con);
+	    fprintf(stderr, "%s\n", mysql_error(con));
+		mysql_close(con);
+		exit(1);
     }
 
 	
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
 
 	if(mysql_query(con, "SELECT sn FROM fixit_log WHERE rn = %d", ticket_no) {
-        finish_with_error(con);
+        fprintf(stderr, "%s\n", mysql_error(con));
+		mysql_close(con);
+		exit(1);
     }
 	int k = 0;
     do {
         MYSQL_RES *result = mysql_store_result(con);
         if( result == NULL) {
             printf("No Serial no. associated with the tickets");
-            finish_with_error(con);
+            fprintf(stderr, "%s\n", mysql_error(con));
+			mysql_close(con);
+			exit(1);
 			break;
         }
         MYSQL_RQW row = mysql_fetch_row(result);
@@ -347,7 +347,9 @@ void execute_coin_converter(unsigned int packet_len){
         mysql_free_result(result);
         status = mysql_next_result(con);
         if(status > 0) {
-            finish_with_error(con);
+            fprintf(stderr, "%s\n", mysql_error(con));
+			mysql_close(con);
+			exit(1);
         }
 		k++;
     } while(status == 0);
@@ -361,13 +363,14 @@ void execute_coin_converter(unsigned int packet_len){
 	else {
 		status_code = NO_ERR_CODE;
 	}
-
 	send_response(status_code,size);
 //---------------------------------------------------------------------
 
 	//DELETE THE RECORDS FROM THE TABLE
 	if(mysql_query(con, "DELETE FROM fixit_log WHERE rn= %d", ticket_no)) {
-        finish_with_error(con);
+        fprintf(stderr, "%s\n", mysql_error(con));
+		mysql_close(con);
+		exit(1);
     }
 
 //-----------------------------------------------------------------	
@@ -378,7 +381,9 @@ void execute_coin_converter(unsigned int packet_len){
 	for(int i =0; i < sr_nos_size; i++) {
 
 		if(mysql_query(con, "UPDATE ans SET NN = 2 WHERE SN = %d AND NN = 1", sr_nos[i] )) {
-			finish_with_error(con);
+			fprintf(stderr, "%s\n", mysql_error(con));
+			mysql_close(con);
+			exit(1);
 		}
 	}
 
