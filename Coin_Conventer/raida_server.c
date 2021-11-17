@@ -11,7 +11,7 @@ void welcomeMsg() {
 //Loads raida no from raida_no.txt
 //----------------------------------------------------------
 int load_raida_no(){
-	FILE *fp_inp = NULL;
+	FILE *fp_inp=NULL;
 	int size=0,ch;
 	unsigned char buff[24];
 	char path[256];
@@ -33,17 +33,16 @@ int load_raida_no(){
 	if(size == 2){
 		server_config_obj.raida_id = (buff[0]-48)*10;
 		server_config_obj.raida_id+= (buff[1]-48);
-	}
-	else {
+	}else{
 		server_config_obj.raida_id=buff[0]-48;
 	}
-	printf("Raida_Id:- %d \n", server_config_obj.raida_id);
+	printf("Raida Id  :-%d \n", server_config_obj.raida_id);
 	fclose(fp_inp);
 	return 0;
 }
 //----------------------------------------------------------
 //Loads server configuation from server.bin
-//---------------------------------------------------------
+//----------------------------------------------------------
 int load_server_config() {
 	FILE *fp_inp = NULL;
 	int cnt=0;
@@ -59,16 +58,32 @@ int load_server_config() {
 		printf("Configuration parameters missing in server.bin \n");
 		return 1;
 	}
-	//server_config_obj.raida_id=buff[0];
-	server_config_obj.port_number = buff[2];
-	server_config_obj.port_number|= (((uint16_t)buff[1])<<8);
-
+	server_config_obj.port_number = buff[1];
+	server_config_obj.port_number|= (((uint16_t)buff[0])<<8);
+	server_config_obj.bytes_per_frame = buff[3];
+	server_config_obj.bytes_per_frame |= (((uint16_t)buff[2])<<8);
 	printf("------------------------------\n");
 	printf("Server Configuration Details..\n");
 	printf("------------------------------\n");
 	printf("Port Number :- %d \n", server_config_obj.port_number);
+	printf("Bytes per UDP Request body :- %d \n",server_config_obj.bytes_per_frame);
 	fclose(fp_inp);
 	return 0;
+}
+//----------------------------------------------------------
+// Returns time in centi seconds
+//----------------------------------------------------------
+long get_time_cs()
+{
+    long            ms,cs; // Milliseconds
+    time_t          s;  // Seconds
+    struct timespec spec;
+    //clock_gettime(CLOCK_REALTIME, &spec);
+    s  = spec.tv_sec;
+    //ms = round(spec.tv_nsec / 1.0e3); // Convert nanoseconds to milliseconds
+    cs = ms /100;	
+//    printf("Current time: %"PRIdMAX".%03ld seconds since the Epoch\n",(intmax_t)s, ms);
+    return ms;	
 }
 //---------------------------------------------------------
 // Get the current directory path starting from home dir
@@ -83,7 +98,7 @@ void getexepath()
 		slash_pos = i;
 	}
 	i++;
-  }
+  }	
   strncpy(execpath,buff,slash_pos);
 }
 
@@ -91,15 +106,15 @@ void getexepath()
 // main function
 //---------------------------------------------------------
 int main() {
-	uint32_t packet_size,i=0;
+	uint32_t packet_size,i=0;	
 	welcomeMsg();
+	//init_en_codes();
 	getexepath();
-	load_raida_no();
-	if(load_server_config()){
+	if(load_raida_no() || load_server_config()){
 		exit(0);
 	}
+	srand(time(NULL));
 	init_udp_socket();
-
 	while(1) {
 		if ((packet_size=listen_request())>0){
 			process_request(packet_size);

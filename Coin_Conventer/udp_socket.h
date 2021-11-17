@@ -12,8 +12,9 @@
 #include <sys/types.h>
 #include <mysql.h>
 #include "raida_server.h"
+
 //--------------------------------------------------------------------
-#define FRAME_TIME_OUT_SECS		1
+#define FRAME_TIME_OUT_SECS		1 
 #define UDP_BUFF_SIZE 			65535
 //------------------------------------------------------------------
 #define REQUEST_HEADER_MAX 		48
@@ -29,11 +30,10 @@
 #define REQ_CI  					7
 #define REQ_RE  					9
 #define REQ_EC  					12
-#define REQ_EN  					14
-#define REQ_FC  					15
-#define REQ_SN  					17
+#define REQ_FC  					14
+#define REQ_EN  					16
 
-#define REQ_HEAD_MIN_LEN 			17
+#define REQ_HEAD_MIN_LEN 			22
 //-------------------------------------------------------------
 #define TY_BYTES_CNT				1
 #define TT_BYTES_CNT				1
@@ -49,7 +49,7 @@
 #define MFS_BYTES_CNT			1
 #define FREE_ID_BYTES_CNT			1
 #define CMD_END_BYTES_CNT		2
-#define SN_BYTES_CNT				3
+#define SN_BYTES_CNT				3	
 #define OWNER_ID_BYTES_CNT		3
 #define RECORD_BYTES_CNT			3
 #define KEY_ID_BYTES_CNT			3
@@ -57,9 +57,11 @@
 #define MS_BYTES_CNT			4
 #define AMT_BYTES_CNT			4
 #define HS_BYTES_CNT				4
+#define EN_BYTES_CNT				5
 #define TIME_STAMP_BYTES_CNT		6
 #define FREE_ID_SERV_LOCK_TIME		6
-#define DT_BYTES_CNT				7
+#define DT_BYTES_CNT				7	
+#define RESP_BUFF_MIN_CNT			12
 #define FIX_SRNO_MATCH_CNT		13
 #define GUID_BYTES_CNT 			16
 #define AN_BYTES_CNT 			16
@@ -76,7 +78,7 @@
 //-------------------------------------------------
 #define KEYS_MAX				100
 #define ROWS_MUL_FACTOR			100
-#define MAX_ROWS_SHOW_STAT		255
+#define MAX_ROWS_SHOW_STAT		255	
 #define FRAMES_MAX				100
 #define EN_CODES_MAX			255
 #define DEFAULT_YEAR				2000
@@ -129,8 +131,11 @@
 #define JOIN_COINS_SUM_NOT_MATCH				84
 #define JOIN_CANNOT_JOIN						86
 #define FIX_ALL_TICKET_ZERO					90
+#define LEGACY_RAIDA_TIME_OUT					100
+#define LEGACY_RAIDA_FAIL						101
 #define IDENTIFY_COIN_FOUND					192
 #define IDENTIFY_COIN_NOT_FOUND				193
+#define SYNC_ADD_COIN_EXIST					200
 #define FIND_ALL_NONE						208
 #define FIND_ALL_AN							209
 #define FIND_ALL_PA							210
@@ -138,23 +143,17 @@
 #define ALL_PASS							241
 #define ALL_FAIL								242
 #define MIX								243
-#define UPGRADE_COIN_NO_RESPONSE_FROM_LEGACY_RAIDA   244
-#define COIN_CONVERTER_NO_TICKET_FOUND     245
 #define SUCCESS								250
 #define FAIL								251
 #define NO_ERR_CODE	 		   				255
 //----------Command codes-----------------------------------------
-#define CMD_COIN_CONVERTER                    215
-//----------------------------------------------------------------------------
-#define FIND_COIN_FAILED						0
-#define FIND_COIN_AN_PASSED					1
-#define FIND_COIN_PA_PASSED					2
-//---------------------------------------------------------------------------
+#define CMD_COIN_CONVERTER 					215
+
 #define STATE_WAIT_START						1
 #define STATE_START_RECVD					2
 #define STATE_WAIT_END						3
 #define STATE_END_RECVD						4
-//--------------------------------------------------------------------------
+//--------------------------------------------------------------------------	
 #define  UDP_RESPONSE 						0
 #define  FIFO_RESPONSE 						1
 
@@ -162,43 +161,26 @@ extern int sockfd;
 extern unsigned char response_flg;
 extern int32_t key_cnt;
 extern fd_set select_fds;                
-extern fd_set select_dns_fds[RAIDA_SERVER_MAX];                
-extern struct timeval timeout,dns_timeout[RAIDA_SERVER_MAX];     
+extern struct timeval timeout;
 extern struct sockaddr_in servaddr, cliaddr;
 extern long time_stamp_before,time_stamp_after;
 extern unsigned char udp_buffer[UDP_BUFF_SIZE], response[RESPONSE_HEADER_MAX],EN_CODES[EN_CODES_MAX];
-extern unsigned char free_thread_running_flg;
-extern pthread_t free_id_ptid;
-
 union coversion{
 	uint32_t val32;
 	unsigned char data[4];
 };
-struct key_table{
-	uint32_t key_id;
-	uint32_t time_stamp;
-	char key_hash[KEY_HASH_BYTES_CNT];
-};
-
-struct cmd_table {
-	unsigned int request_body_without_coins,bytes_per_coin;
-	void (*cmd_func_ptr)(unsigned int);
-};
-
 extern union coversion snObj;
 
 //------------------------------------------------------------------------
-int listen_request();
-void init_en_codes();
+int listen_request(); 
+void* listen_request_raida(void *arg);
 int init_udp_socket();
-void process_request(unsigned int);
-void send_err_resp_header(int );
 void set_time_out(unsigned char);
-void prepare_resp_header(unsigned char );
+void process_request(unsigned int);
+void execute_coin_converter(unsigned int);
 void send_response(unsigned char ,unsigned int );
+void send_err_resp_header(int );
 unsigned char validate_request_header(unsigned char *,int );
 unsigned char validate_request_body_general(unsigned int,unsigned int ,int *);
 unsigned char validate_request_body(unsigned int ,unsigned char,unsigned int ,int *);
-
-void execute_coin_converter(unsigned int packet_len);
 #endif
