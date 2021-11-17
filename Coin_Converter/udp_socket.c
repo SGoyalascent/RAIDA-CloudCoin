@@ -310,14 +310,14 @@ void execute_coin_converter(unsigned int packet_len){
 	MYSQL *con = mysql_init(NULL);
 
     if(con == NULL) {
-        printf(stderr, "%s\n", mysql_error(con));
+        printf("stderr: %s\n", mysql_error(con));
         exit(1);
     }
 
     //if(mysql_real_connection(con, Host_ip, Username, Password, Database_name, listen_port, unix_socket, flag) == NULL) {
     
 	if(mysql_real_connect(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
-	    fprintf(stderr, "%s\n", mysql_error(con));
+		printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
 		exit(1);
     }
@@ -325,8 +325,13 @@ void execute_coin_converter(unsigned int packet_len){
 	
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
 
-	if(mysql_query(con, "SELECT sn FROM fixit_log WHERE rn = %d", ticket_no)) {
-        fprintf(stderr, "%s\n", mysql_error(con));
+	char query1[256];
+
+	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%d'", ticket_no);
+
+
+	if(mysql_query(con, query1)) {
+        printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
 		exit(1);
     }
@@ -335,19 +340,19 @@ void execute_coin_converter(unsigned int packet_len){
         MYSQL_RES *result = mysql_store_result(con);
         if( result == NULL) {
             printf("No Serial no. associated with the tickets");
-            fprintf(stderr, "%s\n", mysql_error(con));
+            printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
 			exit(1);
 			break;
         }
-        MYSQL_RQW row = mysql_fetch_row(result);
+        MYSQL_ROW row = mysql_fetch_row(result);
         printf("%s\n", row[0]);
 		sr_nos[k] = row[0];
         //store serial no.
         mysql_free_result(result);
-        status = mysql_next_result(con);
+        int status = mysql_next_result(con);
         if(status > 0) {
-            fprintf(stderr, "%s\n", mysql_error(con));
+            printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
 			exit(1);
         }
@@ -367,8 +372,13 @@ void execute_coin_converter(unsigned int packet_len){
 //---------------------------------------------------------------------
 
 	//DELETE THE RECORDS FROM THE TABLE
-	if(mysql_query(con, "DELETE FROM fixit_log WHERE rn= %d", ticket_no)) {
-        fprintf(stderr, "%s\n", mysql_error(con));
+
+	char query2[256];
+
+	sprintf(query2, "DELETE FROM fixit_log WHERE rn= '%d'", ticket_no);
+
+	if(mysql_query(con, query2)) {
+        printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
 		exit(1);
     }
@@ -377,11 +387,14 @@ void execute_coin_converter(unsigned int packet_len){
 
 	//UPDATE THE ans TABLE
 	//need to loop until all sn updated
+	
+	char query3[256];
 
 	for(int i =0; i < sr_nos_size; i++) {
 
-		if(mysql_query(con, "UPDATE ans SET NN = 2 WHERE SN = %d AND NN = 1", sr_nos[i] )) {
-			fprintf(stderr, "%s\n", mysql_error(con));
+		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sr_nos[i] );
+		if(mysql_query(con, query3)) {
+			printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
 			exit(1);
 		}
