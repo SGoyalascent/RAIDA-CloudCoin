@@ -60,6 +60,7 @@ int load_server_config() {
 	}
 	server_config_obj.port_number = buff[1];
 	server_config_obj.port_number|= (((uint16_t)buff[0])<<8);
+	//server_config_obj.port_number = 1800;
 	server_config_obj.bytes_per_frame = buff[3];
 	server_config_obj.bytes_per_frame |= (((uint16_t)buff[2])<<8);
 	printf("------------------------------\n");

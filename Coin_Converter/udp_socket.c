@@ -124,6 +124,7 @@ void process_request(unsigned int packet_len){
 	coin_id |= (((uint16_t)udp_buffer[REQ_CI])<<8);
 	switch(cmd_no){
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
+		case CMD_ECHO:						execute_echo(packet_len);break;
 		default:							send_err_resp_header(INVALID_CMD);	
 	}
 	
@@ -269,6 +270,17 @@ void send_response(unsigned char status_code,unsigned int size){
 		MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
 		len);
 }
+
+//---------------------------------------------------------------
+// ECHO COMMAND  4
+//---------------------------------------------------------------
+void execute_echo(unsigned int packet_len){
+	int req_body = 0,req_header_min=0,size;
+	printf("ECHO Command \n");
+	size    =  RES_HS+HS_BYTES_CNT;
+	send_response(SUCCESS,size);
+}
+
 //---------------------------------------------------------------
 //Coin converter 215
 //---------------------------------------------------------------

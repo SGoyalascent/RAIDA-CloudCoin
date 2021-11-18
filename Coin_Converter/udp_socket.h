@@ -151,6 +151,7 @@
 #define NO_TICKET_FOUND                245
 //----------Command codes-----------------------------------------
 #define CMD_COIN_CONVERTER 					215
+#define CMD_ECHO							4
 
 #define STATE_WAIT_START						1
 #define STATE_START_RECVD					2
@@ -183,6 +184,7 @@ void process_request(unsigned int);
 void execute_coin_converter(unsigned int);
 void send_response(unsigned char ,unsigned int );
 void send_err_resp_header(int );
+void execute_echo(unsigned int);
 unsigned char validate_request_header(unsigned char *,int );
 unsigned char validate_request_body_general(unsigned int,unsigned int ,int *);
 unsigned char validate_request_body(unsigned int ,unsigned char,unsigned int ,int *);
