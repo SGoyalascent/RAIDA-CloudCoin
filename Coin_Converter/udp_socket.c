@@ -348,8 +348,10 @@ void execute_coin_converter(unsigned int packet_len){
 			break;
         }
         MYSQL_ROW row = mysql_fetch_row(result);
-        printf("%s\n", row[0]);
-		sr_nos[k] = row[0];
+        printf("%2s\n", row[0]);
+
+		sr_nos[k] = (int)row[0];
+
         //store serial no.
         mysql_free_result(result);
         status = mysql_next_result(con);
