@@ -21,32 +21,20 @@ void set_time_out(unsigned char secs){
 //-----------------------------------------------------------
 int init_udp_socket() {
 	// Creating socket file descriptor
-	printf("init_udp_socket\n");
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
 		perror("socket creation failed");
 		exit(EXIT_FAILURE);
-	}
-	else {
-		printf("Socket Creation Successful\n");
 	}
 	memset(&servaddr, 0, sizeof(servaddr));
 	memset(&cliaddr, 0, sizeof(cliaddr));
 	// Filling server information
 	servaddr.sin_family = AF_INET; // IPv4
 	servaddr.sin_addr.s_addr = INADDR_ANY;
-	server_config_obj.port_number = 30000;
 	servaddr.sin_port = htons(server_config_obj.port_number);
-	//servaddr.sin_port = htons(30000);
 	// Bind the socket with the server address
 	if ( bind(sockfd, (const struct sockaddr *)&servaddr,sizeof(servaddr)) < 0 ){
 		perror("bind failed");
 		exit(EXIT_FAILURE);
-	}
-	else if(bind(sockfd, (const struct sockaddr *)&servaddr,sizeof(servaddr)) == 0 ) {
-		printf("Bind Successful\n");
-	}
-	else {
-		printf("Unknow Bind Error, bind > 0\n");
 	}
 }
 //-----------------------------------------------------------
@@ -57,11 +45,8 @@ int listen_request(){
 	uint16_t frames_expected=0,curr_frame_no=0,n=0,i,index=0;
 	uint32_t	 client_s_addr=0; 	
 	socklen_t len=sizeof(struct sockaddr_in);
-	server_config_obj.bytes_per_frame = 1024;
 	buffer = (unsigned char *) malloc(server_config_obj.bytes_per_frame);
-	printf("Listen Request\n");
 	while(1){
-		printf("state: %s", state);
 		switch(state){
 			case STATE_WAIT_START:
 				printf("---------------------WAITING FOR REQ HEADER ----------------------\n");
@@ -69,9 +54,7 @@ int listen_request(){
 				curr_frame_no=0;
 				client_s_addr = 0;	
 				memset(buffer,0,server_config_obj.bytes_per_frame);
-				printf("check1\n");
 				n = recvfrom(sockfd, (unsigned char *)buffer, server_config_obj.bytes_per_frame,MSG_WAITALL, ( struct sockaddr *) &cliaddr,&len);
-				printf("recvfrom, n: %d\n", n);
 				curr_frame_no=1;
 				printf("--------RECVD  FRAME NO ------ %d\n", curr_frame_no);
 				state = STATE_START_RECVD;	
@@ -140,7 +123,6 @@ void process_request(unsigned int packet_len){
 	coin_id = udp_buffer[REQ_CI+1];
 	coin_id |= (((uint16_t)udp_buffer[REQ_CI])<<8);
 	switch(cmd_no){
-	//switch(4) {
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
 		case CMD_ECHO:						execute_echo(packet_len);break;
 		default:							send_err_resp_header(INVALID_CMD);	
@@ -160,9 +142,6 @@ void send_err_resp_header(int status_code){
 	}else{
 		ex_time= time_stamp_after-time_stamp_before;
 	}
-	server_config_obj.raida_id = 11;
-	printf("Raidaid: %s", server_config_obj.raida_id);
-
 	printf("Error Status code %d  \n",status_code);
 	response[RES_RI] = server_config_obj.raida_id;
 	response[RES_SH] = 0;
@@ -194,8 +173,6 @@ void prepare_resp_header(unsigned char status_code){
 	}else{
 		ex_time= time_stamp_after-time_stamp_before;
 	}
-
-	printf("Raidaid: %s", server_config_obj.raida_id);
 	response[RES_RI] = server_config_obj.raida_id;
 	response[RES_SH] = 0;
 	response[RES_SS] = status_code;
@@ -293,21 +270,9 @@ void send_response(unsigned char status_code,unsigned int size){
 		MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
 		len);
 }
-
-//---------------------------------------------------------------
-// ECHO COMMAND  4
-//---------------------------------------------------------------
-void execute_echo(unsigned int packet_len){
-	int req_body = 0,req_header_min=0,size;
-	printf("ECHO Command \n");
-	size    =  RES_HS+HS_BYTES_CNT;
-	send_response(SUCCESS,size);
-}
-
 //---------------------------------------------------------------
 //Coin converter 215
 //---------------------------------------------------------------
-
 void execute_coin_converter(unsigned int packet_len){
 	int req_body_without_coins = CH_BYTES_CNT + CMD_END_BYTES_CNT,bytes_per_coin = SN_BYTES_CNT+AN_BYTES_CNT+PAN_BYTES_CNT;
 	int req_header_min, no_of_coins,ticket_no=0;
@@ -319,128 +284,14 @@ void execute_coin_converter(unsigned int packet_len){
 		return;
 	}
 	
-	//send_response(status_code,size);
-
-
-	// READ COIN_CONVERTER CONFIG FILE---------------------
-
-	char Host_ip[256], Database_name[256], Username[256], User_password[256];
-    char Encryption_key[256], Mode[256];
-	int listen_port;
-
-    printf("Hello User to Coin_Converter\n");
-
-    FILE *myfile = fopen("Coin_Converter.config", "r");
-    if(myfile == NULL) {
-        printf("Config file not found\n");
-    }
-    fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s", Host_ip, Database_name,
-                                                  Username, User_password, &listen_port, Encryption_key, Mode);
-    fclose(myfile);
-    printf("Host = %s\n Database = %s\n Username = %s\n Password = %s\n listenport = %d\n encryption_key = %s\n mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
-
-
-// Initialize a connection to the Database---------------------
-
-	MYSQL *con = mysql_init(NULL);
-
-    if(con == NULL) {
-        printf("stderr: %s\n", mysql_error(con));
-        exit(1);
-    }
-
-    //if(mysql_real_connection(con, Host_ip, Username, Password, Database_name, listen_port, unix_socket, flag) == NULL) {
-    
-	if(mysql_real_connect(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
-		printf("stderr: %s\n", mysql_error(con));
-		mysql_close(con);
-		exit(1);
-    }
-
-	
-	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
-
-	char query1[256];
-
-	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%d'", ticket_no);
-
-
-	if(mysql_query(con, query1)) {
-        printf("stderr: %s\n", mysql_error(con));
-		mysql_close(con);
-		exit(1);
-    }
-	int k = 0;
-	int sr_nos[1024];
-	int status;
-	MYSQL_RES *result = mysql_store_result(con);
-        if( result == NULL) {
-            printf("No Serial no. associated with the tickets");
-            printf("stderr: %s\n", mysql_error(con));
-			mysql_close(con);
-			exit(1);
-        }
-
-	int sr_nos_size = mysql_num_rows(result);
-	if(sr_nos_size == 0) {
-		printf("No Serial no. associated with the tickets");
-		status_code = NO_TICKET_FOUND;
-		continue; }
-
-    do {
-        MYSQL_ROW row = mysql_fetch_row(result);
-        printf("%2s\n", row[0]);
-
-		//sr_nos[k] = (int)row[0];
-
-        //store serial no.
-        mysql_free_result(result);
-        status = mysql_next_result(con);
-        if(status > 0) {
-            printf("stderr: %s\n", mysql_error(con));
-			mysql_close(con);
-			exit(1);
-        }
-		k++;
-    } while(status == 0);
-
-	//SEND THE SERIAL NO.'S TO THE REQUESTER-------------
-
-	
-	else if(sr_nos_size > 0){
-		status_code = ALL_PASS;
-	}
 	send_response(status_code,size);
-//---------------------------------------------------------------------
-
-	//DELETE THE RECORDS FROM THE TABLE
-
-	char query2[256];
-
-	sprintf(query2, "DELETE FROM fixit_log WHERE rn= '%d'", ticket_no);
-
-	if(mysql_query(con, query2)) {
-        printf("stderr: %s\n", mysql_error(con));
-		mysql_close(con);
-		exit(1);
-    }
-
-//-----------------------------------------------------------------	
-
-	//UPDATE THE ans TABLE
-	//need to loop until all sn updated
-	
-	char query3[256];
-
-	for(int i =0; i < sr_nos_size; i++) {
-
-		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sr_nos[i] );
-		if(mysql_query(con, query3)) {
-			printf("stderr: %s\n", mysql_error(con));
-			mysql_close(con);
-			exit(1);
-		}
-	}
-
-//-------------------------------------------------------
+}
+//---------------------------------------------------------------
+// ECHO COMMAND  4
+//---------------------------------------------------------------
+void execute_echo(unsigned int packet_len){
+	int req_body = 0,req_header_min=0,size;
+	printf("ECHO Command \n");
+	size    =  RES_HS+HS_BYTES_CNT;
+	send_response(SUCCESS,size);
 }

@@ -44,7 +44,7 @@ int load_raida_no(){
 //Loads server configuation from server.bin
 //----------------------------------------------------------
 int load_server_config() {
-	FILE *fp_inp = NULL;
+	/*FILE *fp_inp = NULL;
 	int cnt=0;
 	unsigned char buff[SERVER_CONFIG_BYTES];
 	char path[256];
@@ -57,20 +57,21 @@ int load_server_config() {
 	if(fread(buff, 1, SERVER_CONFIG_BYTES, fp_inp)<SERVER_CONFIG_BYTES){
 		printf("Configuration parameters missing in server.bin \n");
 		return 1;
-	}
-	server_config_obj.port_number = buff[1];
-	server_config_obj.port_number|= (((uint16_t)buff[0])<<8);
-	//server_config_obj.port_number = 18000;
+	}*/
+	//server_config_obj.port_number = buff[1];
+	//server_config_obj.port_number|= (((uint16_t)buff[0])<<8);
 	server_config_obj.port_number = 30000;
-	server_config_obj.bytes_per_frame = buff[3];
-	server_config_obj.bytes_per_frame |= (((uint16_t)buff[2])<<8);
-	//server_config_obj.bytes_per_frame = 1024;
+
+	//server_config_obj.bytes_per_frame = buff[3];
+	//server_config_obj.bytes_per_frame |= (((uint16_t)buff[2])<<8);
+
+	server_config_obj.bytes_per_frame = 1024;
 	printf("------------------------------\n");
 	printf("Server Configuration Details..\n");
 	printf("------------------------------\n");
 	printf("Port Number :- %d \n", server_config_obj.port_number);
 	printf("Bytes per UDP Request body :- %d \n",server_config_obj.bytes_per_frame);
-	fclose(fp_inp);
+	//fclose(fp_inp);
 	return 0;
 }
 //----------------------------------------------------------
@@ -81,9 +82,9 @@ long get_time_cs()
     long            ms,cs; // Milliseconds
     time_t          s;  // Seconds
     struct timespec spec;
-    //clock_gettime(CLOCK_REALTIME, &spec);
+    clock_gettime(CLOCK_REALTIME, &spec);
     s  = spec.tv_sec;
-    //ms = round(spec.tv_nsec / 1.0e3); // Convert nanoseconds to milliseconds
+    ms = round(spec.tv_nsec / 1.0e3); // Convert nanoseconds to milliseconds
     cs = ms /100;	
 //    printf("Current time: %"PRIdMAX".%03ld seconds since the Epoch\n",(intmax_t)s, ms);
     return ms;	
