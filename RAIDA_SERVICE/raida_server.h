@@ -24,6 +24,7 @@ struct server_config {
 void welcomeMsg();
 int load_raida_no();
 int load_server_config();
+long get_time_cs();
 extern char execpath[256];
 extern struct server_config server_config_obj;
 #endif

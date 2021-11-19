@@ -36,6 +36,8 @@ int load_raida_no(){
 	}else{
 		server_config_obj.raida_id=buff[0]-48;
 	}
+
+	//server_config_obj.raida_id = 2;
 	printf("Raida Id  :-%d \n", server_config_obj.raida_id);
 	fclose(fp_inp);
 	return 0;
@@ -61,7 +63,7 @@ int load_server_config() {
 	server_config_obj.port_number = buff[1];
 	server_config_obj.port_number|= (((uint16_t)buff[0])<<8);
 	//server_config_obj.port_number = 18000;
-	server_config_obj.port_number = 30000;
+	//server_config_obj.port_number = 30000;
 	server_config_obj.bytes_per_frame = buff[3];
 	server_config_obj.bytes_per_frame |= (((uint16_t)buff[2])<<8);
 	//server_config_obj.bytes_per_frame = 1024;
@@ -81,10 +83,10 @@ long get_time_cs()
     long            ms,cs; // Milliseconds
     time_t          s;  // Seconds
     struct timespec spec;
-    //clock_gettime(CLOCK_REALTIME, &spec);
+    clock_gettime(CLOCK_REALTIME, &spec);
     s  = spec.tv_sec;
     //ms = round(spec.tv_nsec / 1.0e3); // Convert nanoseconds to milliseconds
-    cs = ms /100;	
+    //cs = ms /100;	
 //    printf("Current time: %"PRIdMAX".%03ld seconds since the Epoch\n",(intmax_t)s, ms);
     return ms;	
 }

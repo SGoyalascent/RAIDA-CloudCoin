@@ -34,7 +34,7 @@ int init_udp_socket() {
 	// Filling server information
 	servaddr.sin_family = AF_INET; // IPv4
 	servaddr.sin_addr.s_addr = INADDR_ANY;
-	server_config_obj.port_number = 30000;
+	//server_config_obj.port_number = 30000;
 	servaddr.sin_port = htons(server_config_obj.port_number);
 	//servaddr.sin_port = htons(30000);
 	// Bind the socket with the server address
@@ -57,7 +57,7 @@ int listen_request(){
 	uint16_t frames_expected=0,curr_frame_no=0,n=0,i,index=0;
 	uint32_t	 client_s_addr=0; 	
 	socklen_t len=sizeof(struct sockaddr_in);
-	server_config_obj.bytes_per_frame = 1024;
+	//server_config_obj.bytes_per_frame = 1024;
 	buffer = (unsigned char *) malloc(server_config_obj.bytes_per_frame);
 	printf("Listen Request\n");
 	while(1){
@@ -139,8 +139,8 @@ void process_request(unsigned int packet_len){
 	cmd_no |= (((uint16_t)udp_buffer[REQ_CM])<<8);
 	coin_id = udp_buffer[REQ_CI+1];
 	coin_id |= (((uint16_t)udp_buffer[REQ_CI])<<8);
-	switch(cmd_no){
-	//switch(4) {
+	//switch(cmd_no){
+	switch(4) {
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
 		case CMD_ECHO:						execute_echo(packet_len);break;
 		default:							send_err_resp_header(INVALID_CMD);	
