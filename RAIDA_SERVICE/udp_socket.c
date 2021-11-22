@@ -122,6 +122,7 @@ void process_request(unsigned int packet_len){
 	cmd_no |= (((uint16_t)udp_buffer[REQ_CM])<<8);
 	coin_id = udp_buffer[REQ_CI+1];
 	coin_id |= (((uint16_t)udp_buffer[REQ_CI])<<8);
+	printf("Cmd_no: %d",cmd_no);
 	switch(cmd_no){
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
 		case CMD_ECHO:						execute_echo(packet_len);break;

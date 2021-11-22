@@ -42,12 +42,12 @@ int init_udp_socket() {
 		perror("bind failed");
 		exit(EXIT_FAILURE);
 	}
-	else if(bind(sockfd, (const struct sockaddr *)&servaddr,sizeof(servaddr)) == 0 ) {
+	else {
 		printf("Bind Successful\n");
 	}
-	else {
-		printf("Unknow Bind Error, bind > 0\n");
-	}
+	//else {
+	//	printf("Unknow Bind Error, bind > 0\n");
+	//}
 }
 //-----------------------------------------------------------
 // receives the UDP packet from the client
@@ -61,7 +61,7 @@ int listen_request(){
 	buffer = (unsigned char *) malloc(server_config_obj.bytes_per_frame);
 	printf("Listen Request\n");
 	while(1){
-		printf("state: %s", state);
+		printf("state: %d", state);
 		switch(state){
 			case STATE_WAIT_START:
 				printf("---------------------WAITING FOR REQ HEADER ----------------------\n");
@@ -140,7 +140,7 @@ void process_request(unsigned int packet_len){
 	coin_id = udp_buffer[REQ_CI+1];
 	coin_id |= (((uint16_t)udp_buffer[REQ_CI])<<8);
 	//switch(cmd_no){
-	switch(4) {
+	switch(215) {
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
 		case CMD_ECHO:						execute_echo(packet_len);break;
 		default:							send_err_resp_header(INVALID_CMD);	
@@ -160,8 +160,8 @@ void send_err_resp_header(int status_code){
 	}else{
 		ex_time= time_stamp_after-time_stamp_before;
 	}
-	server_config_obj.raida_id = 11;
-	printf("Raidaid: %s", server_config_obj.raida_id);
+	//server_config_obj.raida_id = 11;
+	printf("Raidaid: %d\n", server_config_obj.raida_id);
 
 	printf("Error Status code %d  \n",status_code);
 	response[RES_RI] = server_config_obj.raida_id;
@@ -195,7 +195,7 @@ void prepare_resp_header(unsigned char status_code){
 		ex_time= time_stamp_after-time_stamp_before;
 	}
 
-	printf("Raidaid: %s", server_config_obj.raida_id);
+	printf("Raidaid: %d\n", server_config_obj.raida_id);
 	response[RES_RI] = server_config_obj.raida_id;
 	response[RES_SH] = 0;
 	response[RES_SS] = status_code;
@@ -384,8 +384,7 @@ void execute_coin_converter(unsigned int packet_len){
 	int sr_nos_size = mysql_num_rows(result);
 	if(sr_nos_size == 0) {
 		printf("No Serial no. associated with the tickets");
-		status_code = NO_TICKET_FOUND;
-		continue; }
+		status_code = NO_TICKET_FOUND; }
 
     do {
         MYSQL_ROW row = mysql_fetch_row(result);
@@ -407,7 +406,7 @@ void execute_coin_converter(unsigned int packet_len){
 	//SEND THE SERIAL NO.'S TO THE REQUESTER-------------
 
 	
-	else if(sr_nos_size > 0){
+	if(sr_nos_size > 0){
 		status_code = ALL_PASS;
 	}
 	send_response(status_code,size);
