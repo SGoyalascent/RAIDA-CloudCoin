@@ -1,4 +1,4 @@
-E:\AscentSparks_Work\Tasks\11-10\Task_3\wsproxy-udp\Makefile.exe -f "E:\AscentSparks_Work\Tasks\11-10\Task_3\wsproxy-udp\Makefile" -C "E:\AscentSparks_Work\Tasks\11-10\Task_3\wsproxy-udp\" --dry-run --always-make --keep-going --print-directory
+E:\AscentSparks_Work\Tasks\11-10\Task_3\wsproxy-udp\Makefile.exe -f "E:\AscentSparks_Work\Tasks\11-10\Task_3\wsproxy-udp\Makefile" -C "E:\AscentSparks_Work\Tasks\11-10\Task_3\wsproxy-udp\" --dry-run --keep-going --print-directory
 '"E:\AscentSparks_Work\Tasks\11-10\Task_3\wsproxy-udp\Makefile.exe"' is not recognized as an internal or external command,
 operable program or batch file.
  

@@ -45,9 +45,6 @@ int init_udp_socket() {
 	else {
 		printf("Bind Successful\n");
 	}
-	//else {
-	//	printf("Unknow Bind Error, bind > 0\n");
-	//}
 }
 //-----------------------------------------------------------
 // receives the UDP packet from the client
@@ -69,7 +66,6 @@ int listen_request(){
 				curr_frame_no=0;
 				client_s_addr = 0;	
 				memset(buffer,0,server_config_obj.bytes_per_frame);
-				printf("check1\n");
 				n = recvfrom(sockfd, (unsigned char *)buffer, server_config_obj.bytes_per_frame,MSG_WAITALL, ( struct sockaddr *) &cliaddr,&len);
 				printf("recvfrom, n: %d\n", n);
 				curr_frame_no=1;
@@ -139,8 +135,8 @@ void process_request(unsigned int packet_len){
 	cmd_no |= (((uint16_t)udp_buffer[REQ_CM])<<8);
 	coin_id = udp_buffer[REQ_CI+1];
 	coin_id |= (((uint16_t)udp_buffer[REQ_CI])<<8);
-	//switch(cmd_no){
-	switch(215) {
+	switch(cmd_no){
+	{
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
 		case CMD_ECHO:						execute_echo(packet_len);break;
 		default:							send_err_resp_header(INVALID_CMD);	
@@ -256,10 +252,14 @@ unsigned char validate_request_body(unsigned int packet_len,unsigned char bytes_
 	unsigned int no_of_coins=0;
 	*req_header_min = REQ_HEAD_MIN_LEN;// + EN_CODES[udp_buffer[REQ_EN]];	
 	no_of_coins = (packet_len-(*req_header_min+req_body_without_coins))/bytes_per_coin;
+	printf("--Validate Request Header---\n");
+	printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body_Without_Coins: %u\t\t Bytes_Per_Coin: %c\n", packet_len, *req_header_min, req_body_without_coins, bytes_per_coin);
 	if((packet_len-(*req_header_min+req_body_without_coins))%bytes_per_coin!=0){
+		printf("check: %u", (packet_len-(*req_header_min+req_body_without_coins))%bytes_per_coin);
 		send_err_resp_header(LEN_OF_BODY_CANT_DIV_IN_COINS);
 		return 0;
 	}
+	printf("No._of_COINS: %u\n", no_of_coins);
 	if(no_of_coins==0){
 		send_err_resp_header(LEN_OF_BODY_CANT_DIV_IN_COINS);
 		return 0;
@@ -313,11 +313,21 @@ void execute_coin_converter(unsigned int packet_len){
 	int req_header_min, no_of_coins,ticket_no=0;
 	unsigned int i=0,index=0,j=0,pass_cnt=0,fail_cnt=0,size=0;
 	unsigned char status_code,pass_fail[COINS_MAX]={0};
-	printf("coin converter Command \n");
+	printf("----COIN CONVERTER COMMAND------ \n");
 	no_of_coins = validate_request_body(packet_len,bytes_per_coin,req_body_without_coins,&req_header_min);
 	if(no_of_coins <=0){
 		return;
 	}
+
+	index = req_header_min+CH_BYTES_CNT;
+	for(j=0;j<TK_BYTES_CNT;j++)
+		snObj.data[j]=udp_buffer[index+(TK_BYTES_CNT-1-j)];
+	ticket_no= snObj.val32;
+	printf("Ticket number %d \n", snObj.val32);
+	index = RES_HS+TK_BYTES_CNT;
+	size    =  RES_HS+TK_BYTES_CNT;
+	printf("index: %d", index);
+	printf("size: %d", size);
 	
 	//send_response(status_code,size);
 
