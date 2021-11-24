@@ -70,7 +70,7 @@
 #define KEY_BYTES_CNT			16
 #define CH_BYTES_CNT				16
 #define PWD_BYTES_CNT			16
-#define LEGACY_RAIDA_TK_CNT		22
+#define LEGACY_RAIDA_TK_BYTES_CNT		22
 #define MD_HASH_BYTES_CNT		32
 #define META_DATA_BYTES_CNT		50
 #define REQ_END					62

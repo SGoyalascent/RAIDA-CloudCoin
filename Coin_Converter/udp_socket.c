@@ -210,7 +210,7 @@ void prepare_resp_header(unsigned char status_code){
 //-----------------------------------------------------------
 unsigned char validate_request_header(unsigned char * buff,int packet_size){
 	uint16_t frames_expected,i=0,request_header_exp_len= REQ_HEAD_MIN_LEN, coin_id=0;
-	printf("--Validate Teq Header--\n");
+	printf("--Validate Req Header--\n");
 	
 	/*if(buff[REQ_EN]!=0){
 		for(i=1;i<EN_CODES_MAX+1;i++){
@@ -242,7 +242,7 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 		printf("Invalid split id \n");
 		return INVALID_SPLIT_ID;
 	}
-	printf("buff[req_ri] = %c", buff[REQ_RI]);
+	printf("buff[req_ri] = %d", buff[REQ_RI]);
 	if(buff[REQ_RI]!=server_config_obj.raida_id){
 		printf("Invalid Raida id \n");
 		return WRONG_RAIDA;
@@ -256,10 +256,10 @@ unsigned char validate_request_body(unsigned int packet_len,unsigned char bytes_
 	unsigned int no_of_coins=0;
 	*req_header_min = REQ_HEAD_MIN_LEN;// + EN_CODES[udp_buffer[REQ_EN]];	
 	no_of_coins = (packet_len-(*req_header_min+req_body_without_coins))/bytes_per_coin;
-	printf("--Validate Request Header---\n");
-	printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body_Without_Coins: %u\t\t Bytes_Per_Coin: %c\n", packet_len, *req_header_min, req_body_without_coins, bytes_per_coin);
+	printf("--Validate Request Body---\n");
+	printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body_Without_Coins: %u\t\t Bytes_Per_Coin: %d\n", packet_len, *req_header_min, req_body_without_coins, bytes_per_coin);
 	if((packet_len-(*req_header_min+req_body_without_coins))%bytes_per_coin!=0){
-		printf("check: %u", (packet_len-(*req_header_min+req_body_without_coins))%bytes_per_coin);
+		printf("check: %u\n", (packet_len-(*req_header_min+req_body_without_coins))%bytes_per_coin);
 		send_err_resp_header(LEN_OF_BODY_CANT_DIV_IN_COINS);
 		return 0;
 	}
@@ -313,25 +313,26 @@ void execute_echo(unsigned int packet_len){
 //---------------------------------------------------------------
 
 void execute_coin_converter(unsigned int packet_len){
-	int req_body_without_coins = CH_BYTES_CNT + CMD_END_BYTES_CNT,bytes_per_coin = SN_BYTES_CNT+AN_BYTES_CNT+PAN_BYTES_CNT;
-	int req_header_min, no_of_coins,ticket_no=0;
+	int req_body = CH_BYTES_CNT + CMD_END_BYTES_CNT + LEGACY_RAIDA_TK_BYTES_CNT;
+	int req_header_min;
+	int ticket_no = 0;
 	unsigned int i=0,index=0,j=0,pass_cnt=0,fail_cnt=0,size=0;
 	unsigned char status_code,pass_fail[COINS_MAX]={0};
 	printf("----COIN CONVERTER COMMAND------ \n");
-	no_of_coins = validate_request_body(packet_len,bytes_per_coin,req_body_without_coins,&req_header_min);
-	if(no_of_coins <=0){
+	printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body: %u\t\t  %d\n", packet_len, req_header_min, req_body);
+	if(validate_request_body_general(packet_len,req_body,&req_header_min)==0){
+		send_err_resp_header(EMPTY_REQ_BODY);
 		return;
 	}
-
+	printf("Req_Header_Min: %d\n", req_header_min);
 	index = req_header_min+CH_BYTES_CNT;
-	for(j=0;j<TK_BYTES_CNT;j++)
-		snObj.data[j]=udp_buffer[index+(TK_BYTES_CNT-1-j)];
+	printf("index: %d\n", index);
+	for(j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
+		snObj.data[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; }
 	ticket_no= snObj.val32;
 	printf("Ticket number %d \n", snObj.val32);
-	index = RES_HS+TK_BYTES_CNT;
-	size    =  RES_HS+TK_BYTES_CNT;
-	printf("index: %d", index);
-	printf("size: %d", size);
+	size =  RES_HS + LEGACY_RAIDA_TK_BYTES_CNT;
+	printf("size: %d\n", size);
 	
 	//send_response(status_code,size);
 
@@ -342,7 +343,7 @@ void execute_coin_converter(unsigned int packet_len){
     char Encryption_key[256], Mode[256];
 	int listen_port;
 
-    printf("Hello User to Coin_Converter\n");
+    printf("Hello User to MySql Database\n");
 
     FILE *myfile = fopen("Coin_Converter.config", "r");
     if(myfile == NULL) {
@@ -351,7 +352,7 @@ void execute_coin_converter(unsigned int packet_len){
     fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s", Host_ip, Database_name,
                                                   Username, User_password, &listen_port, Encryption_key, Mode);
     fclose(myfile);
-    printf("Host = %s\n Database = %s\n Username = %s\n Password = %s\n listenport = %d\n encryption_key = %s\n mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
+    printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\t\t", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
 
 
 // Initialize a connection to the Database---------------------
