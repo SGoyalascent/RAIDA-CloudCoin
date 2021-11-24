@@ -1,1 +1,0 @@
-gcc -o raida_service raida_server.c udp_socket.c -lm -pthread
