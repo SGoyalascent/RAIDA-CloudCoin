@@ -136,7 +136,7 @@ void process_request(unsigned int packet_len){
 	coin_id = udp_buffer[REQ_CI+1];
 	coin_id |= (((uint16_t)udp_buffer[REQ_CI])<<8);
 	switch(cmd_no){
-	{
+	
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
 		case CMD_ECHO:						execute_echo(packet_len);break;
 		default:							send_err_resp_header(INVALID_CMD);	
@@ -210,6 +210,8 @@ void prepare_resp_header(unsigned char status_code){
 //-----------------------------------------------------------
 unsigned char validate_request_header(unsigned char * buff,int packet_size){
 	uint16_t frames_expected,i=0,request_header_exp_len= REQ_HEAD_MIN_LEN, coin_id=0;
+	printf("--Validate Teq Header--\n");
+	
 	/*if(buff[REQ_EN]!=0){
 		for(i=1;i<EN_CODES_MAX+1;i++){
 			if(EN_CODES[buff[REQ_EN]]>0)
@@ -220,6 +222,7 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 		return INVALID_EN_CODE;
 	}
 	request_header_exp_len = REQ_HEAD_MIN_LEN;
+	printf("packet size: %d\n", packet_size);
 	if(packet_size< request_header_exp_len){
 		printf("Invalid request header  \n");
 		return INVALID_PACKET_LEN;
@@ -239,6 +242,7 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 		printf("Invalid split id \n");
 		return INVALID_SPLIT_ID;
 	}
+	printf("buff[req_ri] = %c", buff[REQ_RI]);
 	if(buff[REQ_RI]!=server_config_obj.raida_id){
 		printf("Invalid Raida id \n");
 		return WRONG_RAIDA;
