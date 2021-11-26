@@ -330,8 +330,10 @@ void execute_coin_converter(unsigned int packet_len){
 
 	unsigned char ticket_buffer[22];
 	for(j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
-		ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; }
-		memcpy(ticket_no, ticket_buffer, 22);
+		ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
+		printf(" \tbuffer: %c\t\t ", ticket_buffer[j]);
+	}
+	ticket_no = ticket_buffer;
 	printf("Ticket number= %d\n", ticket_no);
 
 
