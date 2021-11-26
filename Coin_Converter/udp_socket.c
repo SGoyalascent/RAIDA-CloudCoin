@@ -26,24 +26,16 @@ int init_udp_socket() {
 		perror("socket creation failed");
 		exit(EXIT_FAILURE);
 	}
-	else {
-		printf("Socket Creation Successful\n");
-	}
 	memset(&servaddr, 0, sizeof(servaddr));
 	memset(&cliaddr, 0, sizeof(cliaddr));
 	// Filling server information
 	servaddr.sin_family = AF_INET; // IPv4
 	servaddr.sin_addr.s_addr = INADDR_ANY;
-	//server_config_obj.port_number = 30000;
 	servaddr.sin_port = htons(server_config_obj.port_number);
-	//servaddr.sin_port = htons(30000);
 	// Bind the socket with the server address
 	if ( bind(sockfd, (const struct sockaddr *)&servaddr,sizeof(servaddr)) < 0 ){
 		perror("bind failed");
 		exit(EXIT_FAILURE);
-	}
-	else {
-		printf("Bind Successful\n");
 	}
 }
 //-----------------------------------------------------------
@@ -54,9 +46,7 @@ int listen_request(){
 	uint16_t frames_expected=0,curr_frame_no=0,n=0,i,index=0;
 	uint32_t	 client_s_addr=0; 	
 	socklen_t len=sizeof(struct sockaddr_in);
-	//server_config_obj.bytes_per_frame = 1024;
 	buffer = (unsigned char *) malloc(server_config_obj.bytes_per_frame);
-	printf("Listen Request\n");
 	while(1){
 		printf("state: %d", state);
 		switch(state){
@@ -157,7 +147,6 @@ void send_err_resp_header(int status_code){
 		ex_time= time_stamp_after-time_stamp_before;
 	}
 	//server_config_obj.raida_id = 11;
-	printf("Raidaid: %d\n", server_config_obj.raida_id);
 
 	printf("Error Status code %d  \n",status_code);
 	response[RES_RI] = server_config_obj.raida_id;
@@ -191,7 +180,6 @@ void prepare_resp_header(unsigned char status_code){
 		ex_time= time_stamp_after-time_stamp_before;
 	}
 
-	printf("Raidaid: %d\n", server_config_obj.raida_id);
 	response[RES_RI] = server_config_obj.raida_id;
 	response[RES_SH] = 0;
 	response[RES_SS] = status_code;
@@ -259,11 +247,10 @@ unsigned char validate_request_body(unsigned int packet_len,unsigned char bytes_
 	printf("--Validate Request Body---\n");
 	printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body_Without_Coins: %u\t\t Bytes_Per_Coin: %d\n", packet_len, *req_header_min, req_body_without_coins, bytes_per_coin);
 	if((packet_len-(*req_header_min+req_body_without_coins))%bytes_per_coin!=0){
-		printf("check: %u\n", (packet_len-(*req_header_min+req_body_without_coins))%bytes_per_coin);
 		send_err_resp_header(LEN_OF_BODY_CANT_DIV_IN_COINS);
 		return 0;
 	}
-	printf("No._of_COINS: %u\n", no_of_coins);
+	//printf("No._of_COINS: %u\n", no_of_coins);
 	if(no_of_coins==0){
 		send_err_resp_header(LEN_OF_BODY_CANT_DIV_IN_COINS);
 		return 0;
@@ -331,9 +318,9 @@ void execute_coin_converter(unsigned int packet_len){
 	unsigned char ticket_buffer[22];
 	for(j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
 		ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
-		printf(" \tbuffer: %c\t\t ", ticket_buffer[j]);
+		printf("buffer: %d\t", ticket_buffer[j]);
 	}
-	ticket_no = ticket_buffer;
+	//ticket_no = ticket_buffer;
 	printf("Ticket number= %d\n", ticket_no);
 
 
@@ -377,7 +364,7 @@ void execute_coin_converter(unsigned int packet_len){
 
 	char query1[256];
 	
-	unsigned char ticket = 	"36849fd7996b6f4a637a5f0e228f5ee902e396898c80";
+	unsigned char* ticket =	"36849fd7996b6f4a637a5f0e228f5ee902e396898c80";
 
 	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket);
 	printf("Ticket number= %s\n", ticket);
@@ -399,17 +386,16 @@ void execute_coin_converter(unsigned int packet_len){
         }
 
 	int sr_nos_size = mysql_num_rows(result);
+	printf("Serial No's Size: %d\n", sr_nos_size);
 	if(sr_nos_size == 0) {
 		printf("No Serial no. associated with the ticket in the Database\n");
 		status_code = NO_TICKET_FOUND; }
 
-    do {
-        MYSQL_ROW row = mysql_fetch_row(result);
-        printf("%2s\n", row[0]);
-
-		//sr_nos[k] = (int)row[0];
-
-        //store serial no.
+	for(int i =0; i <sr_nos_size; i++) {
+		MYSQL_ROW row = mysql_fetch_row(result);
+    	printf("--sn: %2s\n", row[0]);
+	}
+		/*
         mysql_free_result(result);
         status = mysql_next_result(con);
         if(status > 0) {
@@ -418,7 +404,7 @@ void execute_coin_converter(unsigned int packet_len){
 			exit(1);
         }
 		k++;
-    } while(status == 0);
+    } while(status == 0);  */
 
 	//SEND THE SERIAL NO.'S TO THE REQUESTER-------------
 
@@ -430,7 +416,7 @@ void execute_coin_converter(unsigned int packet_len){
 	index = RES_HS+HS_BYTES_CNT;
 	size    =  RES_HS+HS_BYTES_CNT;
 	if(status_code == ALL_PASS || status_code == MIX){
-		snObj.val32 = ticket;
+		//snObj.val32 = ticket;
 		for(j=0;j<MS_BYTES_CNT;j++)
 			response[index+j]=snObj.data[MS_BYTES_CNT-1-j];
 		index+=MS_BYTES_CNT;
