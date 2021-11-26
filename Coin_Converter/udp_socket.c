@@ -242,7 +242,7 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 		printf("Invalid split id \n");
 		return INVALID_SPLIT_ID;
 	}
-	printf("buff[req_ri] = %d", buff[REQ_RI]);
+	printf("buff[req_ri] = %d\n", buff[REQ_RI]);
 	if(buff[REQ_RI]!=server_config_obj.raida_id){
 		printf("Invalid Raida id \n");
 		return WRONG_RAIDA;
@@ -319,7 +319,7 @@ void execute_coin_converter(unsigned int packet_len){
 	unsigned int i=0,index=0,j=0,pass_cnt=0,fail_cnt=0,size=0;
 	unsigned char status_code,pass_fail[COINS_MAX]={0};
 	printf("----COIN CONVERTER COMMAND------ \n");
-	printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body: %u\t\t  %d\n", packet_len, req_header_min, req_body);
+	printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body: %u\n", packet_len, req_header_min, req_body);
 	if(validate_request_body_general(packet_len,req_body,&req_header_min)==0){
 		send_err_resp_header(EMPTY_REQ_BODY);
 		return;
@@ -327,14 +327,12 @@ void execute_coin_converter(unsigned int packet_len){
 	printf("Req_Header_Min: %d\n", req_header_min);
 	index = req_header_min+CH_BYTES_CNT;
 	printf("index: %d\n", index);
+
+	unsigned char ticket_buffer[22];
 	for(j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
-		snObj.data[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; }
-	ticket_no= snObj.val32;
-	printf("Ticket number %d \n", snObj.val32);
-	size =  RES_HS + LEGACY_RAIDA_TK_BYTES_CNT;
-	printf("size: %d\n", size);
-	
-	//send_response(status_code,size);
+		ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; }
+		memcpy(ticket_no, ticket_buffer, 22);
+	printf("Ticket number= %d\n", ticket_no);
 
 
 	// READ COIN_CONVERTER CONFIG FILE---------------------
@@ -352,7 +350,7 @@ void execute_coin_converter(unsigned int packet_len){
     fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s", Host_ip, Database_name,
                                                   Username, User_password, &listen_port, Encryption_key, Mode);
     fclose(myfile);
-    printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\t\t", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
+    printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
 
 
 // Initialize a connection to the Database---------------------
@@ -361,36 +359,35 @@ void execute_coin_converter(unsigned int packet_len){
 
     if(con == NULL) {
         printf("stderr: %s\n", mysql_error(con));
-        exit(1);
-    }
+		status_code = FAIL;
+	}
 
     //if(mysql_real_connection(con, Host_ip, Username, Password, Database_name, listen_port, unix_socket, flag) == NULL) {
     
 	if(mysql_real_connect(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
 		printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
-		exit(1);
+		status_code = FAIL;
     }
 
-	
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
 
 	char query1[256];
 
 	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%d'", ticket_no);
 
-
 	if(mysql_query(con, query1)) {
         printf("stderr: %s\n", mysql_error(con));
+		printf("Query not successful\n");
 		mysql_close(con);
-		exit(1);
+		status_code = FAIL;
     }
 	int k = 0;
 	int sr_nos[1024];
 	int status;
 	MYSQL_RES *result = mysql_store_result(con);
         if( result == NULL) {
-            printf("No Serial no. associated with the tickets");
+            printf("No Serial no. associated with the tickets\n");
             printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
 			exit(1);
@@ -398,7 +395,7 @@ void execute_coin_converter(unsigned int packet_len){
 
 	int sr_nos_size = mysql_num_rows(result);
 	if(sr_nos_size == 0) {
-		printf("No Serial no. associated with the tickets");
+		printf("No Serial no. associated with the ticket in the Database\n");
 		status_code = NO_TICKET_FOUND; }
 
     do {
@@ -423,6 +420,16 @@ void execute_coin_converter(unsigned int packet_len){
 	
 	if(sr_nos_size > 0){
 		status_code = ALL_PASS;
+	}
+
+	index = RES_HS+HS_BYTES_CNT;
+	size    =  RES_HS+HS_BYTES_CNT;
+	if(status_code == ALL_PASS || status_code == MIX){
+		snObj.val32 = ticket_no;
+		for(j=0;j<MS_BYTES_CNT;j++)
+			response[index+j]=snObj.data[MS_BYTES_CNT-1-j];
+		index+=MS_BYTES_CNT;
+		size+=MS_BYTES_CNT;
 	}
 	send_response(status_code,size);
 //---------------------------------------------------------------------
