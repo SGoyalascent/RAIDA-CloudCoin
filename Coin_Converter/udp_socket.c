@@ -370,14 +370,17 @@ void execute_coin_converter(unsigned int packet_len){
 		printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
 		status_code = FAIL;
+		exit(1);
     }
 
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
 
 	char query1[256];
+	
+	unsigned char ticket = 	"36849fd7996b6f4a637a5f0e228f5ee902e396898c80";
 
-	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%d'", ticket_no);
-
+	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket);
+	printf("Ticket number= %s\n", ticket);
 	if(mysql_query(con, query1)) {
         printf("stderr: %s\n", mysql_error(con));
 		printf("Query not successful\n");
@@ -427,7 +430,7 @@ void execute_coin_converter(unsigned int packet_len){
 	index = RES_HS+HS_BYTES_CNT;
 	size    =  RES_HS+HS_BYTES_CNT;
 	if(status_code == ALL_PASS || status_code == MIX){
-		snObj.val32 = ticket_no;
+		snObj.val32 = ticket;
 		for(j=0;j<MS_BYTES_CNT;j++)
 			response[index+j]=snObj.data[MS_BYTES_CNT-1-j];
 		index+=MS_BYTES_CNT;
