@@ -374,15 +374,13 @@ void execute_coin_converter(unsigned int packet_len){
 		mysql_close(con);
 		status_code = FAIL;
     }
-	int k = 0;
 	int sr_nos[1024];
-	int status;
 	MYSQL_RES *result = mysql_store_result(con);
         if( result == NULL) {
             printf("No Serial no. associated with the tickets\n");
             printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
-			exit(1);
+			status_code = FAIL;
         }
 
 	int sr_nos_size = mysql_num_rows(result);
