@@ -378,15 +378,12 @@ void execute_coin_converter(unsigned int packet_len){
 	MYSQL_RES *result = mysql_store_result(con);
 	unsigned int sr_nos_size = mysql_num_rows(result);
 	unsigned int column = mysql_num_fields(result);
-	unsigned long* length = mysql_fetch_lengths(result);
+	unsigned long *length = mysql_fetch_lengths(result);
 	printf("No. of Serial No's : %d\t", sr_nos_size);
-	printf("check5\n");
-	printf("No. of Columns: %u\n", column);
-	printf("check6\n");
-	for(unsigned int i = 0, i < column, i++) {
-		printf("length of column %u is %lu bytes", i, length[i]);
-	}
-	printf("check7\n");
+	//printf("No. of Columns: %u\t", column);
+	//printf("check6\n");
+	//printf("length of the column is %lu bytes", length[0]);
+	//printf("check7\n");
 	
 	if( result == NULL) {
 		printf("Ticket not in the database\n");
@@ -398,6 +395,7 @@ void execute_coin_converter(unsigned int packet_len){
 		for(int i =0; i <sr_nos_size; i++) {
 			MYSQL_ROW row = mysql_fetch_row(result);
 			printf("--sn: %2s\n", row[i]);
+			sscanf(row[i], "%u", sr_no[i]);
 		}
 		status_code = SUCCESS;
 	}
