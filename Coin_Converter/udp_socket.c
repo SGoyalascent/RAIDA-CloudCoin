@@ -304,7 +304,7 @@ void execute_echo(unsigned int packet_len){
 void execute_coin_converter(unsigned int packet_len){
 	int req_body = CH_BYTES_CNT + CMD_END_BYTES_CNT + LEGACY_RAIDA_TK_BYTES_CNT;
 	int req_header_min;
-	int ticket_no = 0;
+	uint64_t ticket_no = 0;
 	unsigned int i=0,index=0,j=0,pass_cnt=0,fail_cnt=0,size=0;
 	unsigned char status_code,pass_fail[COINS_MAX]={0};
 	printf("----COIN CONVERTER COMMAND------ \n");
@@ -319,7 +319,7 @@ void execute_coin_converter(unsigned int packet_len){
 
 	for(j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
 		ticket.ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
-		printf("buffer: %d\t", ticket_buffer[j]);
+		printf("buffer: %d\t", ticket.ticket_buffer[j]);
 	}
 	ticket_no = ticket.ticket_data;
 	printf("Ticket number= %d\n", ticket_no);
@@ -374,10 +374,10 @@ void execute_coin_converter(unsigned int packet_len){
 		mysql_close(con);
 		status_code = FAIL;
     }
-	unit32_t sr_no;
+	uint32_t sr_no[1024];
 	MYSQL_RES *result = mysql_store_result(con);
 	int sr_nos_size = mysql_num_rows(result);
-	int length = mysql_fetch_lengths(result);
+	unsigned long* length = mysql_fetch_lengths(result);
 	printf("No. of Serial No's : %d\t", sr_nos_size);
 	printf("No. of Columns: %d\n", length);
 	if( result == NULL) {
@@ -400,7 +400,7 @@ void execute_coin_converter(unsigned int packet_len){
 	size = RES_HS+HS_BYTES_CNT;
 
 	for(int j = 0; j <SN_BYTES_CNT; j++) {
-		response[index+j] = 
+		//response[index+j] = 
 	}
 
 	
@@ -428,7 +428,7 @@ void execute_coin_converter(unsigned int packet_len){
 
 	for(int i =0; i < sr_nos_size; i++) {
 
-		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sr_nos[i] );
+		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sr_no[i] );
 		if(mysql_query(con, query3)) {
 			printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
