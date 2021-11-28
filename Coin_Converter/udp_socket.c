@@ -374,12 +374,12 @@ void execute_coin_converter(unsigned int packet_len){
 		mysql_close(con);
 		status_code = FAIL;
     }
-	uint32_t sr_no[1024];
+	uint32_t sr_nos[10000];
 	MYSQL_RES *result = mysql_store_result(con);
 	unsigned int sr_nos_size = mysql_num_rows(result);
-	unsigned int column = mysql_num_fields(result);
-	unsigned long *length = mysql_fetch_lengths(result);
-	printf("No. of Serial No's : %d\t", sr_nos_size);
+	//unsigned int column = mysql_num_fields(result);
+	//unsigned long *length = mysql_fetch_lengths(result);
+	printf("No. of Serial No's : %d\n", sr_nos_size);
 	//printf("No. of Columns: %u\t", column);
 	//printf("check6\n");
 	//printf("length of the column is %lu bytes", length[0]);
@@ -392,37 +392,42 @@ void execute_coin_converter(unsigned int packet_len){
 		status_code = NO_TICKET_FOUND;
 	}
 	else {
+		int k = 0;
 		for(int i =0; i <sr_nos_size; i++) {
 			MYSQL_ROW row = mysql_fetch_row(result);
-			printf("--sn: %2s\n", row[i]);
-			sscanf(row[i], "%u", sr_no[i]);
+			sscanf(row[0], "%u", &sr_nos[i]);
+			printf("--sn: %2s\t sr_no: %u\n",row[0], sr_nos[i]);
+			k++;
 		}
+		printf("k: %d\n", k);
 		status_code = SUCCESS;
 	}
 
 	//SEND THE SERIAL NO.'S TO THE REQUESTER-------------
 
 	index = RES_HS+HS_BYTES_CNT;
-	size = RES_HS+HS_BYTES_CNT;
+	size = RES_HS+HS_BYTES_CNT + (SN_BYTES_CNT*sr_nos_size);
 
-	for(int j = 0; j <SN_BYTES_CNT; j++) {
-		//response[index+j] = 
+	for(int i = 0; i < sr_nos_size; i++) {
+		sr_no.val = sr_nos[i];
+		for(int j = 0; j <SN_BYTES_CNT; j++) {
+			response[index+(3*i)+j] = sr_no.buffer[SN_BYTES_CNT-1-j];
+		}
 	}
-
 	
 	send_response(status_code,size);
 //---------------------------------------------------------------------
-
+	/*
 	//DELETE THE RECORDS FROM THE TABLE
 
 	char query2[256];
 
-	sprintf(query2, "DELETE FROM fixit_log WHERE rn= '%ld'", ticket_no);
+	sprintf(query2, "DELETE FROM fixit_log WHERE rn= '%ld'", ticket_no_Hex);
 
 	if(mysql_query(con, query2)) {
         printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
-		exit(1);
+		return;
     }
 
 //-----------------------------------------------------------------	
@@ -434,13 +439,13 @@ void execute_coin_converter(unsigned int packet_len){
 
 	for(int i =0; i < sr_nos_size; i++) {
 
-		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sr_no[i] );
+		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sr_nos[i] );
 		if(mysql_query(con, query3)) {
 			printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
-			exit(1);
+			return;
 		}
 	}
-
+*/
 //-------------------------------------------------------
 }
