@@ -176,7 +176,7 @@ union coversion{
 extern union coversion snObj;
 
 union masterticket {
-	uint256_t ticket_data;
+	uint64_t ticket_data;
 	unsigned char ticket_buffer[22];
 };
 extern union masterticket ticket; 

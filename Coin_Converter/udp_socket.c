@@ -322,7 +322,7 @@ void execute_coin_converter(unsigned int packet_len){
 		printf("buffer: %d\t", ticket.ticket_buffer[j]);
 	}
 	ticket_no = ticket.ticket_data;
-	printf("Ticket number= %d\n", ticket_no);
+	printf("Ticket number= %ld\n", ticket_no);
 
 
 	// READ COIN_CONVERTER CONFIG FILE---------------------
@@ -379,7 +379,7 @@ void execute_coin_converter(unsigned int packet_len){
 	int sr_nos_size = mysql_num_rows(result);
 	unsigned long* length = mysql_fetch_lengths(result);
 	printf("No. of Serial No's : %d\t", sr_nos_size);
-	printf("No. of Columns: %d\n", length);
+	printf("No. of Columns: %ln\n", length);
 	if( result == NULL) {
 		printf("Ticket not in the database\n");
 		printf("stderr: %s\n", mysql_error(con));
@@ -411,7 +411,7 @@ void execute_coin_converter(unsigned int packet_len){
 
 	char query2[256];
 
-	sprintf(query2, "DELETE FROM fixit_log WHERE rn= '%d'", ticket_no);
+	sprintf(query2, "DELETE FROM fixit_log WHERE rn= '%ld'", ticket_no);
 
 	if(mysql_query(con, query2)) {
         printf("stderr: %s\n", mysql_error(con));
