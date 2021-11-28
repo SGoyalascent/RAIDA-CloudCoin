@@ -317,7 +317,7 @@ void execute_coin_converter(unsigned int packet_len){
 	index = req_header_min+CH_BYTES_CNT;
 	//printf("index: %d\n", index);
 
-	for(j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
+	for(int j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
 		ticket.ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
 		printf("buffer: %d\t", ticket.ticket_buffer[j]);
 	}
@@ -375,12 +375,10 @@ void execute_coin_converter(unsigned int packet_len){
 	MYSQL_RES *result = mysql_store_result(con);
 	unsigned int sr_nos_size = mysql_num_rows(result);
 	//unsigned int column = mysql_num_fields(result);
-	//unsigned long *length = mysql_fetch_lengths(result);
+	
 	printf("No. of Rows: %d\n", sr_nos_size);
 	//printf("No. of Columns: %u\t", column);
-	//printf("check6\n");
-	//printf("length of the column is %lu bytes", length[0]);
-	//printf("check7\n");
+	
 	
 	if( result == NULL) {
 		printf("Ticket not in the database\n");
@@ -389,15 +387,15 @@ void execute_coin_converter(unsigned int packet_len){
 		status_code = NO_TICKET_FOUND;
 	}
 	else {
-		//int k = 0;
+		int k = 0;
 		for(int i =0; i <sr_nos_size; i++) {
 			MYSQL_ROW row = mysql_fetch_row(result);
+			unsigned long *length = mysql_fetch_lengths(result);
 			sscanf(row[0], "%u", &sr_nos[i]);
-			printf("sr_no: %u\n", sr_nos[i]);
-			//printf("--sn: %2s\t sr_no: %u\n",row[0], sr_nos[i]);
-			//k++;
+			//printf("sr_no: %u\n", sr_nos[i]);
+			printf("k: %d\t --sn: %2s\t sr_no: %u\t l: %lu\n",k, row[0], sr_nos[i], length[0]);
+			k++;
 		}
-		//printf("k: %d\n", k);
 		status_code = SUCCESS;
 	}
 
@@ -412,7 +410,7 @@ void execute_coin_converter(unsigned int packet_len){
 			response[index+(3*i)+j] = sn_no.buffer[SN_BYTES_CNT-1-j];
 		}
 	}
-	
+
 	send_response(status_code,size);
 //---------------------------------------------------------------------
 	/*
