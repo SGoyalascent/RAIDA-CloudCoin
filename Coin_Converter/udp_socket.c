@@ -59,7 +59,7 @@ int listen_request(){
 				client_s_addr = 0;	
 				memset(buffer,0,server_config_obj.bytes_per_frame);
 				n = recvfrom(sockfd, (unsigned char *)buffer, server_config_obj.bytes_per_frame,MSG_WAITALL, ( struct sockaddr *) &cliaddr,&len);
-				printf("recvfrom, n: %d\n", n);
+				//printf("recvfrom, n: %d\n", n);
 				curr_frame_no=1;
 				printf("--------RECVD  FRAME NO ------ %d\n", curr_frame_no);
 				state = STATE_START_RECVD;	
@@ -150,7 +150,7 @@ void send_err_resp_header(int status_code){
 	}
 	//server_config_obj.raida_id = 11;
 
-	printf("Error Status code %d  \n",status_code);
+	//printf("Error Status code %d  \n",status_code);
 	response[RES_RI] = server_config_obj.raida_id;
 	response[RES_SH] = 0;
 	response[RES_SS] = status_code;
@@ -200,7 +200,7 @@ void prepare_resp_header(unsigned char status_code){
 //-----------------------------------------------------------
 unsigned char validate_request_header(unsigned char * buff,int packet_size){
 	uint16_t frames_expected,i=0,request_header_exp_len= REQ_HEAD_MIN_LEN, coin_id=0;
-	printf("--Validate Req Header--\n");
+	printf("---------------Validate Req Header-----------------\n");
 	
 	/*if(buff[REQ_EN]!=0){
 		for(i=1;i<EN_CODES_MAX+1;i++){
@@ -212,14 +212,14 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 		return INVALID_EN_CODE;
 	}
 	request_header_exp_len = REQ_HEAD_MIN_LEN;
-	printf("packet size: %d\n", packet_size);
+	//printf("packet size: %d\n", packet_size);
 	if(packet_size< request_header_exp_len){
 		printf("Invalid request header  \n");
 		return INVALID_PACKET_LEN;
 	}
 	frames_expected = buff[REQ_FC+1];
 	frames_expected|=(((uint16_t)buff[REQ_FC])<<8);
-	printf("No of frames expected :- %d\n", frames_expected);
+	//printf("No of frames expected :- %d\n", frames_expected);
 	if(frames_expected <=0  || frames_expected > FRAMES_MAX){
 		printf("Invalid frame count  \n");
 		return INVALID_FRAME_CNT;
@@ -232,7 +232,7 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 		printf("Invalid split id \n");
 		return INVALID_SPLIT_ID;
 	}
-	printf("buff[req_ri] = %d\n", buff[REQ_RI]);
+	//printf("buff[req_ri] = %d\n", buff[REQ_RI]);
 	if(buff[REQ_RI]!=server_config_obj.raida_id){
 		printf("Invalid Raida id \n");
 		return WRONG_RAIDA;
@@ -246,8 +246,8 @@ unsigned char validate_request_body(unsigned int packet_len,unsigned char bytes_
 	unsigned int no_of_coins=0;
 	*req_header_min = REQ_HEAD_MIN_LEN;// + EN_CODES[udp_buffer[REQ_EN]];	
 	no_of_coins = (packet_len-(*req_header_min+req_body_without_coins))/bytes_per_coin;
-	printf("--Validate Request Body---\n");
-	printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body_Without_Coins: %u\t\t Bytes_Per_Coin: %d\n", packet_len, *req_header_min, req_body_without_coins, bytes_per_coin);
+	printf("---------------Validate Request Body---------------------------\n");
+	//printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body_Without_Coins: %u\t\t Bytes_Per_Coin: %d\n", packet_len, *req_header_min, req_body_without_coins, bytes_per_coin);
 	if((packet_len-(*req_header_min+req_body_without_coins))%bytes_per_coin!=0){
 		send_err_resp_header(LEN_OF_BODY_CANT_DIV_IN_COINS);
 		return 0;
@@ -305,17 +305,17 @@ void execute_coin_converter(unsigned int packet_len){
 	int req_body = CH_BYTES_CNT + CMD_END_BYTES_CNT + LEGACY_RAIDA_TK_BYTES_CNT;
 	int req_header_min;
 	uint64_t ticket_no = 0;
-	unsigned int i=0,index=0,j=0,pass_cnt=0,fail_cnt=0,size=0;
-	unsigned char status_code,pass_fail[COINS_MAX]={0};
-	printf("----COIN CONVERTER COMMAND------ \n");
-	printf("Packet_len: %u\t  Req_Header_Min: %d\t Req_Body: %u\t", packet_len, req_header_min, req_body);
+	unsigned int index=0,size=0;
+	unsigned char status_code;
+	printf("--------------COIN CONVERTER COMMAND-------------- \n");
+	//printf("Packet_len: %u\t  Req_Header_Min: %d\t Req_Body: %u\t", packet_len, req_header_min, req_body);
 	if(validate_request_body_general(packet_len,req_body,&req_header_min)==0){
 		send_err_resp_header(EMPTY_REQ_BODY);
 		return;
 	}
-	printf("Req_Header_Min: %d\t", req_header_min);
+	//printf("Req_Header_Min: %d\t", req_header_min);
 	index = req_header_min+CH_BYTES_CNT;
-	printf("index: %d\n", index);
+	//printf("index: %d\n", index);
 
 	for(j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
 		ticket.ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
@@ -327,11 +327,10 @@ void execute_coin_converter(unsigned int packet_len){
 
 	// READ COIN_CONVERTER CONFIG FILE---------------------
 
-	char Host_ip[256], Database_name[256], Username[256], User_password[256];
-    char Encryption_key[256], Mode[256];
+	char Host_ip[256], Database_name[256], Username[256], User_password[256], Encryption_key[256], Mode[256];
 	int listen_port;
 
-    printf("Welcome to MySql Database\n");
+    //printf("Welcome to MySql Database\n");
 
     FILE *myfile = fopen("Coin_Converter.config", "r");
     if(myfile == NULL) {
@@ -345,9 +344,7 @@ void execute_coin_converter(unsigned int packet_len){
 
 
 // Initialize a connection to the Database---------------------
-
 	MYSQL *con = mysql_init(NULL);
-
     if(con == NULL) {
         printf("stderr: %s\n", mysql_error(con));
 		status_code = NO_RESPONSE;
@@ -379,7 +376,7 @@ void execute_coin_converter(unsigned int packet_len){
 	unsigned int sr_nos_size = mysql_num_rows(result);
 	//unsigned int column = mysql_num_fields(result);
 	//unsigned long *length = mysql_fetch_lengths(result);
-	printf("No. of Serial No's : %d\n", sr_nos_size);
+	printf("No. of Rows: %d\n", sr_nos_size);
 	//printf("No. of Columns: %u\t", column);
 	//printf("check6\n");
 	//printf("length of the column is %lu bytes", length[0]);
@@ -392,14 +389,15 @@ void execute_coin_converter(unsigned int packet_len){
 		status_code = NO_TICKET_FOUND;
 	}
 	else {
-		int k = 0;
+		//int k = 0;
 		for(int i =0; i <sr_nos_size; i++) {
 			MYSQL_ROW row = mysql_fetch_row(result);
 			sscanf(row[0], "%u", &sr_nos[i]);
-			printf("--sn: %2s\t sr_no: %u\n",row[0], sr_nos[i]);
-			k++;
+			printf("sr_no: %u\n", sr_nos[i]);
+			//printf("--sn: %2s\t sr_no: %u\n",row[0], sr_nos[i]);
+			//k++;
 		}
-		printf("k: %d\n", k);
+		//printf("k: %d\n", k);
 		status_code = SUCCESS;
 	}
 
@@ -409,9 +407,9 @@ void execute_coin_converter(unsigned int packet_len){
 	size = RES_HS+HS_BYTES_CNT + (SN_BYTES_CNT*sr_nos_size);
 
 	for(int i = 0; i < sr_nos_size; i++) {
-		sr_no.val = sr_nos[i];
+		sn_no.val = sr_nos[i];
 		for(int j = 0; j <SN_BYTES_CNT; j++) {
-			response[index+(3*i)+j] = sr_no.buffer[SN_BYTES_CNT-1-j];
+			response[index+(3*i)+j] = sn_no.buffer[SN_BYTES_CNT-1-j];
 		}
 	}
 	
