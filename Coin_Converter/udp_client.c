@@ -198,7 +198,7 @@ unsigned char buffer_withdraw[MAXLINE]={0,0,0,0,0,104,2,0,0,0,0,0,22,22,0,0,1,1,
 	//   memcpy(buffer,buffer_version,MAXLINE);	
 	//   memcpy(buffer,buffer_news,MAXLINE);	
 	//   memcpy(buffer,buffer_logs,MAXLINE);	
-	//   	memcpy(buffer,buffer_pown,MAXLINE);	
+	//   memcpy(buffer,buffer_pown,MAXLINE);	
 	//	memcpy(buffer,buffer_validate,MAXLINE);	
 	//	memcpy(buffer,buffer_postkey,MAXLINE);	
 	//	memcpy(buffer,buffer_getkey,MAXLINE);	

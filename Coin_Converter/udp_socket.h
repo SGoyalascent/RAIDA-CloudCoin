@@ -175,6 +175,18 @@ union coversion{
 };
 extern union coversion snObj;
 
+union masterticket {
+	unit256_t ticket_data;
+	unsigned char ticket_buffer[22];
+};
+extern union masterticket ticket; 
+
+union serial_no {
+	unit32_t val;
+	unsigned char buffer[3];
+};
+extern union serial_no sn_no;
+
 //------------------------------------------------------------------------
 int listen_request(); 
 void* listen_request_raida(void *arg);

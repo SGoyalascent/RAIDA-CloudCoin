@@ -3,6 +3,8 @@ int sockfd;
 fd_set select_fds;               
 struct timeval timeout;
 union coversion snObj;
+union masterticket ticket; 
+union serial_no sn_no;
 struct sockaddr_in servaddr, cliaddr;
 long time_stamp_before,time_stamp_after;
 unsigned char udp_buffer[UDP_BUFF_SIZE],response[RESPONSE_HEADER_MAX],coin_table_id[5],EN_CODES[EN_CODES_MAX]={0};
@@ -306,21 +308,20 @@ void execute_coin_converter(unsigned int packet_len){
 	unsigned int i=0,index=0,j=0,pass_cnt=0,fail_cnt=0,size=0;
 	unsigned char status_code,pass_fail[COINS_MAX]={0};
 	printf("----COIN CONVERTER COMMAND------ \n");
-	printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body: %u\n", packet_len, req_header_min, req_body);
+	printf("Packet_len: %u\t  Req_Header_Min: %d\t Req_Body: %u\t", packet_len, req_header_min, req_body);
 	if(validate_request_body_general(packet_len,req_body,&req_header_min)==0){
 		send_err_resp_header(EMPTY_REQ_BODY);
 		return;
 	}
-	printf("Req_Header_Min: %d\n", req_header_min);
+	printf("Req_Header_Min: %d\t", req_header_min);
 	index = req_header_min+CH_BYTES_CNT;
 	printf("index: %d\n", index);
 
-	unsigned char ticket_buffer[22];
 	for(j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
-		ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
+		ticket.ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
 		printf("buffer: %d\t", ticket_buffer[j]);
 	}
-	//ticket_no = ticket_buffer;
+	ticket_no = ticket.ticket_data;
 	printf("Ticket number= %d\n", ticket_no);
 
 
@@ -330,16 +331,17 @@ void execute_coin_converter(unsigned int packet_len){
     char Encryption_key[256], Mode[256];
 	int listen_port;
 
-    printf("Hello User to MySql Database\n");
+    printf("Welcome to MySql Database\n");
 
     FILE *myfile = fopen("Coin_Converter.config", "r");
     if(myfile == NULL) {
         printf("Config file not found\n");
+		return;
     }
     fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s", Host_ip, Database_name,
                                                   Username, User_password, &listen_port, Encryption_key, Mode);
     fclose(myfile);
-    printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
+    //printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
 
 
 // Initialize a connection to the Database---------------------
@@ -348,78 +350,60 @@ void execute_coin_converter(unsigned int packet_len){
 
     if(con == NULL) {
         printf("stderr: %s\n", mysql_error(con));
-		status_code = FAIL;
+		status_code = NO_RESPONSE;
 	}
 
     //if(mysql_real_connection(con, Host_ip, Username, Password, Database_name, listen_port, unix_socket, flag) == NULL) {
     
 	if(mysql_real_connect(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
 		printf("stderr: %s\n", mysql_error(con));
+		printf("Cannot connect to MySQL Database\n");
 		mysql_close(con);
-		status_code = FAIL;
-		exit(1);
+		status_code = NO_RESPONSE;
     }
 
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
 
-	char query1[256];
-	
-	unsigned char* ticket =	"36849fd7996b6f4a637a5f0e228f5ee902e396898c80";
+	unsigned char query1[256];
+	unsigned char* ticket_no_Hex =	"d21f0c8bbd775a5bba7739d0f60b5da3fb1fd813ece9";
 
-	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket);
-	printf("Ticket number= %s\n", ticket);
+	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket_no_Hex);
+	printf("Ticket number= %s\n", ticket_no_Hex);
 	if(mysql_query(con, query1)) {
         printf("stderr: %s\n", mysql_error(con));
-		printf("Query not successful\n");
 		mysql_close(con);
 		status_code = FAIL;
     }
-	int sr_nos[1024];
+	unit32_t sr_no;
 	MYSQL_RES *result = mysql_store_result(con);
-        if( result == NULL) {
-            printf("No Serial no. associated with the tickets\n");
-            printf("stderr: %s\n", mysql_error(con));
-			mysql_close(con);
-			status_code = FAIL;
-        }
-
 	int sr_nos_size = mysql_num_rows(result);
-	printf("Serial No's Size: %d\n", sr_nos_size);
-	if(sr_nos_size == 0) {
-		printf("No Serial no. associated with the ticket in the Database\n");
-		status_code = NO_TICKET_FOUND; }
-
-	for(int i =0; i <sr_nos_size; i++) {
-		MYSQL_ROW row = mysql_fetch_row(result);
-    	printf("--sn: %2s\n", row[0]);
+	int length = mysql_fetch_lengths(result);
+	printf("No. of Serial No's : %d\t", sr_nos_size);
+	printf("No. of Columns: %d\n", length);
+	if( result == NULL) {
+		printf("Ticket not in the database\n");
+		printf("stderr: %s\n", mysql_error(con));
+		mysql_close(con);
+		status_code = NO_TICKET_FOUND;
 	}
-		/*
-        mysql_free_result(result);
-        status = mysql_next_result(con);
-        if(status > 0) {
-            printf("stderr: %s\n", mysql_error(con));
-			mysql_close(con);
-			exit(1);
-        }
-		k++;
-    } while(status == 0);  */
+	else {
+		for(int i =0; i <sr_nos_size; i++) {
+			MYSQL_ROW row = mysql_fetch_row(result);
+			printf("--sn: %2s\n", row[i]);
+		}
+		status_code = SUCCESS;
+	}
 
 	//SEND THE SERIAL NO.'S TO THE REQUESTER-------------
 
-	
-	if(sr_nos_size > 0){
-		status_code = ALL_PASS;
+	index = RES_HS+HS_BYTES_CNT;
+	size = RES_HS+HS_BYTES_CNT;
+
+	for(int j = 0; j <SN_BYTES_CNT; j++) {
+		response[index+j] = 
 	}
 
-	index = RES_HS+HS_BYTES_CNT;
-	size    =  RES_HS+HS_BYTES_CNT;
-	if(status_code == ALL_PASS || status_code == MIX){
-		//snObj.val32 = ticket;
-		for(j=0;j<MS_BYTES_CNT;j++)
-			response[index+j]=snObj.data[MS_BYTES_CNT-1-j];
-		index+=MS_BYTES_CNT;
-		size+=MS_BYTES_CNT;
-	}
+	
 	send_response(status_code,size);
 //---------------------------------------------------------------------
 
