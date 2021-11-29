@@ -247,11 +247,7 @@ unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,
 	    servaddr.sin_family = AF_INET;
 	    servaddr.sin_port = htons(PORT);
 //	    servaddr.sin_addr.s_addr = INADDR_ANY;
-//	   servaddr.sin_addr.s_addr = inet_addr("73.66.181.49");
-//	   servaddr.sin_addr.s_addr = inet_addr("147.182.249.132");//24
-	   //servaddr.sin_addr.s_addr = inet_addr("172.105.176.86");
 	   servaddr.sin_addr.s_addr = inet_addr("139.99.155.124");
-//	   servaddr.sin_addr.s_addr = inet_addr("66.172.11.25");
 
 	      
 	    int n, len=0;

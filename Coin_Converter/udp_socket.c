@@ -304,7 +304,7 @@ void execute_coin_converter(unsigned int packet_len){
 	int req_body = CH_BYTES_CNT + CMD_END_BYTES_CNT + LEGACY_RAIDA_TK_BYTES_CNT;
 	int req_header_min;
 	unsigned int index=0,size=0;
-	unsigned char status_code, ticket_buffer[22];
+	unsigned char status_code, ticket_buffer[23];
 
 	printf("--------------COIN CONVERTER COMMAND-------------- \n");
 
@@ -323,7 +323,8 @@ void execute_coin_converter(unsigned int packet_len){
 	index = RES_HS+HS_BYTES_CNT;
 
    // Convert each byte of the ticket into Hexadecimal
-	unsigned char ticket_hex_bytes[44];
+	unsigned char ticket_hex_bytes[45];
+	unsigned char* ticket_no_Hex;
 	for(int i = 0, l = 0; i < 22; i++) {
 
 		int decimal_num = ticket_buffer[i];
@@ -342,14 +343,14 @@ void execute_coin_converter(unsigned int packet_len){
 			}
 			quotient = quotient/16;
 		}
-		printf("bytes_hex: ");
+		//printf("bytes_hex: ");
 		for(int k = j; k >=0; k--) {
 			ticket_hex_bytes[l++] = hex_num[j];
-			printf("%c\t",hex_num[k]);
+			printf("hex_num: %c\t bytes_hex: %c\n",hex_num[k], ticket_hex_bytes[l-1]);
 		}
 	}
-
-	printf("Ticket number= %s\n", ticket_hex_bytes);
+	memmove(ticket_no_Hex, ticket_hex_bytes, 44 );
+	printf("Ticket number= %s\n", ticket_no_Hex);
 
 	// READ COIN_CONVERTER CONFIG FILE---------------------
 
@@ -367,7 +368,8 @@ void execute_coin_converter(unsigned int packet_len){
     fclose(myfile);
     //printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
 
-// Initialize a connection to the Database---------------------
+// -----------------------Initialize a connection to the Database---------------------
+
 	MYSQL *con = mysql_init(NULL);
     if(con == NULL) {
         printf("Error_code: %u\t stderr: %s\n",mysql_errno(con), mysql_error(con));
@@ -389,12 +391,10 @@ void execute_coin_converter(unsigned int packet_len){
 
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
 	unsigned char query1[256];
-	unsigned char* ticket_no_Hex;
 	uint32_t sr_nos[10000];
 	MYSQL_RES *result;
 	unsigned int sr_nos_size;
-	
-	printf("Ticket number= %s\n", ticket_hex_bytes);
+
 	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket_no_Hex);
 	mysql_query(con, query1);
 	if(mysql_errno(con) != 0) {
