@@ -319,6 +319,7 @@ void execute_coin_converter(unsigned int packet_len){
 		ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
 		printf("buffer: %d\t", ticket_buffer[j]);
 	}
+	printf("\n");
 	size = RES_HS+HS_BYTES_CNT;
 	index = RES_HS+HS_BYTES_CNT;
 
@@ -342,15 +343,17 @@ void execute_coin_converter(unsigned int packet_len){
 				hex_num[j++] = 55 + remainder;
 			}
 			quotient = quotient/16;
-		}
+		printf("j: %d", j);
 		//printf("bytes_hex: ");
-		for(int k = j; k >=0; k--) {
-			ticket_hex_bytes[l++] = hex_num[j];
+		//for(int k = j-1; k >=0; k--) {
+			ticket_hex_bytes[l++] = hex_num[1];
+			printf("hex_num: %c\t bytes_hex: %c\n",hex_num[k], ticket_hex_bytes[l-1]);
+			ticket_hex_bytes[l++] = hex_num[0];
 			printf("hex_num: %c\t bytes_hex: %c\n",hex_num[k], ticket_hex_bytes[l-1]);
 		}
 	}
-	memmove(ticket_no_Hex, ticket_hex_bytes, 44 );
-	printf("Ticket number= %s\n", ticket_no_Hex);
+	//memmove(ticket_no_Hex, ticket_hex_bytes, 44);
+	//printf("Ticket number= %s\n", ticket_no_Hex);
 
 	// READ COIN_CONVERTER CONFIG FILE---------------------
 
