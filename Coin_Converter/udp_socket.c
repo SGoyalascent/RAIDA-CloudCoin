@@ -342,9 +342,10 @@ void execute_coin_converter(unsigned int packet_len){
 			}
 			quotient = quotient/16;
 		}
+		printf("bytes_hex: ");
 		for(int k = j; k >=0; k--) {
 			ticket_hex_bytes[l++] = hex_num[j];
-			printf("%c",hex_num[k]);
+			printf("%c\t",hex_num[k]);
 		}
 	}
 
@@ -392,7 +393,8 @@ void execute_coin_converter(unsigned int packet_len){
 	uint32_t sr_nos[10000];
 	MYSQL_RES *result;
 	unsigned int sr_nos_size;
-
+	
+	printf("Ticket number= %s\n", ticket_hex_bytes);
 	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket_no_Hex);
 	mysql_query(con, query1);
 	if(mysql_errno(con) != 0) {

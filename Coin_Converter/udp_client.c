@@ -179,9 +179,13 @@ unsigned char buffer_withdraw[MAXLINE]={0,0,0,0,0,104,2,0,0,0,0,0,22,22,0,0,1,1,
  unsigned char buffer_primary[MAXLINE]={0,0,0,0,0,42,2,0,0,0,0,0,22,22,0,0,1,0x3E,0x3E};
  unsigned char buffer_mirror[MAXLINE]={0,0,0,0,0,43,2,0,0,0,0,0,22,22,0,0,1,0x3E,0x3E};
  unsigned char buffer_check_updates[MAXLINE]={0,0,0,0,0,44,2,0,0,0,0,0,22,22,0,0,1,0x3E,0x3E};
-
+/*
  unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
 										0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+										0x3E,0x3E};
+*/
+unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
+										50,152,212,89,45,112,156,145,198,180,245,218,226,223,238,201,210,60,65,99,169,22,
 										0x3E,0x3E};
 
 	    struct sockaddr_in     servaddr;
