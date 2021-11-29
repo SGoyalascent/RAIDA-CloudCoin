@@ -2,8 +2,7 @@
 int sockfd;
 fd_set select_fds;               
 struct timeval timeout;
-union coversion snObj;
-union masterticket ticket; 
+union coversion snObj; 
 union serial_no sn_no;
 struct sockaddr_in servaddr, cliaddr;
 long time_stamp_before,time_stamp_after;
@@ -304,34 +303,59 @@ void execute_echo(unsigned int packet_len){
 void execute_coin_converter(unsigned int packet_len){
 	int req_body = CH_BYTES_CNT + CMD_END_BYTES_CNT + LEGACY_RAIDA_TK_BYTES_CNT;
 	int req_header_min;
-	uint64_t ticket_no = 0;
 	unsigned int index=0,size=0;
-	unsigned char status_code;
+	unsigned char status_code, ticket_buffer[22];
+
 	printf("--------------COIN CONVERTER COMMAND-------------- \n");
-	//printf("Packet_len: %u\t  Req_Header_Min: %d\t Req_Body: %u\t", packet_len, req_header_min, req_body);
+
 	if(validate_request_body_general(packet_len,req_body,&req_header_min)==0){
 		send_err_resp_header(EMPTY_REQ_BODY);
 		return;
 	}
-	//printf("Req_Header_Min: %d\t", req_header_min);
 	index = req_header_min+CH_BYTES_CNT;
-	//printf("index: %d\n", index);
+	//printf("Packet_len: %u\t Req_Header_Min: %d\t Req_Body: %u\t index: %d\n", packet_len, req_header_min, req_body, index);
 
 	for(int j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
-		ticket.ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
-		printf("buffer: %d\t", ticket.ticket_buffer[j]);
+		ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
+		printf("buffer: %d\t", ticket_buffer[j]);
 	}
-	ticket_no = ticket.ticket_data;
-	printf("Ticket number= %ld\n", ticket_no);
+	size = RES_HS+HS_BYTES_CNT;
+	index = RES_HS+HS_BYTES_CNT;
 
+   // Convert each byte of the ticket into Hexadecimal
+	unsigned char ticket_hex_bytes[44];
+	for(int i = 0, l = 0; i < 22; i++) {
+
+		int decimal_num = ticket_buffer[i];
+		int quotient, remainder;
+		char hex_num[10];
+
+		quotient = decimal_num;
+		int j = 0;
+		while(quotient != 0) {
+			remainder = quotient % 16;
+			if(remainder < 10) {
+				hex_num[j++] = 48 + remainder;
+			}
+			else  {
+				hex_num[j++] = 55 + remainder;
+			}
+			quotient = quotient/16;
+		}
+		for(int k = j; k >=0; k--) {
+			ticket_hex_bytes[l++] = hex_num[j];
+			printf("%c",hex_num[k]);
+		}
+	}
+
+	printf("Ticket number= %s\n", ticket_hex_bytes);
 
 	// READ COIN_CONVERTER CONFIG FILE---------------------
 
 	char Host_ip[256], Database_name[256], Username[256], User_password[256], Encryption_key[256], Mode[256];
 	int listen_port;
 
-    //printf("Welcome to MySql Database\n");
-
+    printf("Welcome to MySql Database\n");
     FILE *myfile = fopen("Coin_Converter.config", "r");
     if(myfile == NULL) {
         printf("Config file not found\n");
@@ -342,75 +366,90 @@ void execute_coin_converter(unsigned int packet_len){
     fclose(myfile);
     //printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
 
-
 // Initialize a connection to the Database---------------------
 	MYSQL *con = mysql_init(NULL);
     if(con == NULL) {
-        printf("stderr: %s\n", mysql_error(con));
+        printf("Error_code: %u\t stderr: %s\n",mysql_errno(con), mysql_error(con));
 		status_code = NO_RESPONSE;
+		printf("Status_code: NO_RESPONSE\n");
+		send_response(status_code,size);
+		return;
 	}
 
     //if(mysql_real_connection(con, Host_ip, Username, Password, Database_name, listen_port, unix_socket, flag) == NULL) {
-    
 	if(mysql_real_connect(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
-		printf("stderr: %s\n", mysql_error(con));
-		printf("Cannot connect to MySQL Database\n");
+		printf("Error_code: %u\t stderr: %s\n",mysql_errno(con), mysql_error(con));
 		mysql_close(con);
 		status_code = NO_RESPONSE;
+		printf("Status_code: NO_RESPONSE\n");
+		send_response(status_code,size);
+		return;
     }
 
 	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
-
 	unsigned char query1[256];
-	unsigned char* ticket_no_Hex =	"d21f0c8bbd775a5bba7739d0f60b5da3fb1fd813ece9";
+	unsigned char* ticket_no_Hex;
+	uint32_t sr_nos[10000];
+	MYSQL_RES *result;
+	unsigned int sr_nos_size;
 
 	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket_no_Hex);
-	printf("Ticket number= %s\n", ticket_no_Hex);
-	if(mysql_query(con, query1)) {
+	mysql_query(con, query1);
+	if(mysql_errno(con) != 0) {
         printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
-		status_code = FAIL;
+		status_code = NO_RESPONSE;
+		printf("Status_code: NO_RESPONSE\n");
+		send_response(status_code,size);
+		return;
     }
-	uint32_t sr_nos[10000];
-	MYSQL_RES *result = mysql_store_result(con);
-	unsigned int sr_nos_size = mysql_num_rows(result);
-	//unsigned int column = mysql_num_fields(result);
-	
-	printf("No. of Rows: %d\n", sr_nos_size);
-	//printf("No. of Columns: %u\t", column);
-	
-	
-	if( result == NULL) {
-		printf("Ticket not in the database\n");
+
+	result = mysql_store_result(con);
+	if( mysql_errno(con) != 0) {
 		printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
+		status_code = FAIL;
+		printf("Status_code: FAIL\n");
+		send_response(status_code,size);
+		return;
+	}
+
+	sr_nos_size = mysql_num_rows(result);
+	printf("No. of Rows: %d\n", sr_nos_size);
+	if(sr_nos_size == 0) {
+		printf("Ticket not in the database\n");
 		status_code = NO_TICKET_FOUND;
+		printf("Status_code: NO_TICKET_FOUND\n");
+		send_response(status_code,size);
+		return;
+
 	}
-	else {
-		int k = 0;
-		for(int i =0; i <sr_nos_size; i++) {
-			MYSQL_ROW row = mysql_fetch_row(result);
-			unsigned long *length = mysql_fetch_lengths(result);
-			sscanf(row[0], "%u", &sr_nos[i]);
-			//printf("sr_no: %u\n", sr_nos[i]);
-			printf("k: %d\t --sn: %2s\t sr_no: %u\t l: %lu\n",k, row[0], sr_nos[i], length[0]);
-			k++;
+
+	int k = 0;
+	for(int i =0; i < sr_nos_size; i++) {
+		MYSQL_ROW row = mysql_fetch_row(result);
+		//sscanf(row[0], "%u", &sr_nos[i]);
+		//printf("k: %d\t --sn: %2s\t sr_no: %u\n",k, row[0], sr_nos[i]);
+		sscanf(row[0], "%u", &sn_no.val);
+		printf("k: %d\t --sn: %2s\t sr_no: %u\n",k, row[0], sn_no.val);
+		k++;
+		//sn_no.val = sr_nos[i];
+		for(int j = 0; j < SN_BYTES_CNT; j++) {
+			response[index+(3*i)+j] = sn_no.buffer[SN_BYTES_CNT-1-j];
 		}
-		status_code = SUCCESS;
 	}
 
-	//SEND THE SERIAL NO.'S TO THE REQUESTER-------------
-
+	status_code = SUCCESS;
 	index = RES_HS+HS_BYTES_CNT;
 	size = RES_HS+HS_BYTES_CNT + (SN_BYTES_CNT*sr_nos_size);
-
+	/*
 	for(int i = 0; i < sr_nos_size; i++) {
 		sn_no.val = sr_nos[i];
 		for(int j = 0; j <SN_BYTES_CNT; j++) {
 			response[index+(3*i)+j] = sn_no.buffer[SN_BYTES_CNT-1-j];
 		}
 	}
-
+	*/
 	send_response(status_code,size);
 //---------------------------------------------------------------------
 	/*

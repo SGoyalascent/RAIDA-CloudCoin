@@ -175,12 +175,6 @@ union coversion{
 };
 extern union coversion snObj;
 
-union masterticket {
-	uint64_t ticket_data;
-	unsigned char ticket_buffer[22];
-};
-extern union masterticket ticket; 
-
 union serial_no {
 	uint32_t val;
 	unsigned char buffer[3];
