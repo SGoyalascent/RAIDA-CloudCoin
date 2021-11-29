@@ -325,7 +325,7 @@ void execute_coin_converter(unsigned int packet_len){
 
    // Convert each byte of the ticket into Hexadecimal
 	unsigned char ticket_hex_bytes[45];
-	unsigned char* ticket_no_Hex;
+	//unsigned char* ticket_no_Hex;
 	for(int i = 0, l = 0; i < 22; i++) {
 
 		int decimal_num = ticket_buffer[i];
@@ -340,20 +340,16 @@ void execute_coin_converter(unsigned int packet_len){
 				hex_num[j++] = 48 + remainder;
 			}
 			else  {
-				hex_num[j++] = 55 + remainder;
+				hex_num[j++] = 87 + remainder;    //hex_num[j++] = 55 + remainder;
 			}
 			quotient = quotient/16;
-		printf("j: %d", j);
-		//printf("bytes_hex: ");
-		//for(int k = j-1; k >=0; k--) {
-			ticket_hex_bytes[l++] = hex_num[1];
-			printf("hex_num: %c\t bytes_hex: %c\n",hex_num[k], ticket_hex_bytes[l-1]);
-			ticket_hex_bytes[l++] = hex_num[0];
-			printf("hex_num: %c\t bytes_hex: %c\n",hex_num[k], ticket_hex_bytes[l-1]);
+		}
+		for(int k = j-1; k >=0; k--) {
+			ticket_hex_bytes[l++] = hex_num[k];
+			//printf("l: %d\t hex_num: %c\t bytes_hex: %c\n",l, hex_num[k], ticket_hex_bytes[l-1]);
 		}
 	}
-	//memmove(ticket_no_Hex, ticket_hex_bytes, 44);
-	//printf("Ticket number= %s\n", ticket_no_Hex);
+	printf("Ticket number= %s\n", ticket_hex_bytes);
 
 	// READ COIN_CONVERTER CONFIG FILE---------------------
 
@@ -398,7 +394,7 @@ void execute_coin_converter(unsigned int packet_len){
 	MYSQL_RES *result;
 	unsigned int sr_nos_size;
 
-	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket_no_Hex);
+	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket_hex_bytes);
 	mysql_query(con, query1);
 	if(mysql_errno(con) != 0) {
         printf("stderr: %s\n", mysql_error(con));
@@ -462,7 +458,7 @@ void execute_coin_converter(unsigned int packet_len){
 
 	char query2[256];
 
-	sprintf(query2, "DELETE FROM fixit_log WHERE rn= '%ld'", ticket_no_Hex);
+	sprintf(query2, "DELETE FROM fixit_log WHERE rn= '%ld'", ticket_hex_bytes);
 
 	if(mysql_query(con, query2)) {
         printf("stderr: %s\n", mysql_error(con));
