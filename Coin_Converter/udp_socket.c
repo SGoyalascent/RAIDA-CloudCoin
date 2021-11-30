@@ -314,12 +314,12 @@ void execute_coin_converter(unsigned int packet_len){
 	}
 	index = req_header_min+CH_BYTES_CNT;
 	//printf("Packet_len: %u\t Req_Header_Min: %d\t Req_Body: %u\t index: %d\n", packet_len, req_header_min, req_body, index);
-	printf("buffer: ");
+	//printf("buffer: ");
 	for(int j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
 		ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
-		printf("%d  ", ticket_buffer[j]);
+		//printf("%d  ", ticket_buffer[j]);
 	}
-	printf("\n");
+	//printf("\n");
 	size = RES_HS+HS_BYTES_CNT;
 	index = RES_HS+HS_BYTES_CNT;
 
@@ -346,14 +346,12 @@ void execute_coin_converter(unsigned int packet_len){
 		}
 		for(int k = j-1; k >=0; k--) {
 			ticket_hex_bytes[l++] = hex_num[k];
-			printf("l: %d\t hex_num: %c\t bytes_hex: %c\n",l, hex_num[k], ticket_hex_bytes[l-1]);
+			//printf("l: %d\t hex_num: %c\t bytes_hex: %c\n",l, hex_num[k], ticket_hex_bytes[l-1]);
 		}
 	}
-	printf("Ticket no. = %s\t", ticket_hex_bytes);
-	printf("size = %ld\n", sizeof(ticket_hex_bytes));
 	ticket_hex_bytes[44] = '\0';
-	printf("Ticket no. = %s\t", ticket_hex_bytes);
-	printf("size = %ld\n", sizeof(ticket_hex_bytes));
+	printf("Ticket no. = %s\n", ticket_hex_bytes);
+	//printf("size = %ld\n", sizeof(ticket_hex_bytes));
 
 	// READ COIN_CONVERTER CONFIG FILE---------------------
 
@@ -397,13 +395,8 @@ void execute_coin_converter(unsigned int packet_len){
 	uint32_t sr_nos[10000];
 	MYSQL_RES *result;
 	unsigned int sr_nos_size;
-	//unsigned char ticket_no_Hex[45] = {'1','7','b','5','b','9','c','0','6','5','9','c','3','d','f','7','c','e','c','c','d','6','d','4','9','a','b','6','6','c','f','9','2','d','e','0','2','2','6','1','e','0','1','5'};
-									  //23 181 185 192 101 156 61 247 206 204 214 212 154 182 108 249 45 224 34 97 224 21
-	//unsigned char* ticket_no_Hex
 
 	sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket_hex_bytes);
-	//sprintf(query1, "SELECT sn FROM fixit_log WHERE rn = '%s'", ticket_no_Hex);
-	//mysql_real_query(con, query1);
 	mysql_query(con, query1);
 	if(mysql_errno(con) != 0) {
         printf("stderr: %s\n", mysql_error(con));
@@ -448,12 +441,13 @@ void execute_coin_converter(unsigned int packet_len){
 	}
 
 	int k = 0;
+	printf("sr_no: ");
 	for(int i =0; i < sr_nos_size; i++) {
 		MYSQL_ROW row = mysql_fetch_row(result);
 		//sscanf(row[0], "%u", &sr_nos[i]);
 		//printf("k: %d\t --sn: %2s\t sr_no: %u\n",k, row[0], sr_nos[i]);
 		sscanf(row[0], "%u", &sn_no.val);
-		printf("k: %d\t --sn: %2s\t sr_no: %u\n",k, row[0], sn_no.val);
+		printf("%u  ", sn_no.val);
 		k++;
 		//sn_no.val = sr_nos[i];
 		for(int j = 0; j < SN_BYTES_CNT; j++) {
