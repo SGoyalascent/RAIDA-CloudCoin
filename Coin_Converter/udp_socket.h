@@ -181,6 +181,13 @@ union serial_no {
 };
 extern union serial_no sn_no;
 
+union ticketconversion {
+	unsigned char ticket_hex_bytes[44];
+	unsigned char* ticket_no_Hex;
+};
+
+extern union ticketconversion hex;
+
 //------------------------------------------------------------------------
 int listen_request(); 
 void* listen_request_raida(void *arg);
