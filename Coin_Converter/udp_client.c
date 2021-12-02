@@ -185,8 +185,10 @@ unsigned char buffer_withdraw[MAXLINE]={0,0,0,0,0,104,2,0,0,0,0,0,22,22,0,0,1,1,
 										0x3E,0x3E};
 */
 unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
-										50,152,212,89,45,112,156,145,198,180,245,218,226,223,238,201,210,60,65,99,169,22,
+										116,131,27,188,155,90,121,30,246,108,181,251,170,91,4,123,206,62,66,27,192,181,
 										0x3E,0x3E};
+
+
 
 	    struct sockaddr_in     servaddr;
 	    /*char md5[64],result[64];	
@@ -264,7 +266,8 @@ unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,
 	    n = recvfrom(sockfd, (char *)recv_buffer, MAXLINE, 
 	                MSG_WAITALL, (struct sockaddr *) &servaddr,
 	                &len);
-	
+		printf("n: %d\n", n);
+
 	   for(i=0;i<n;i++){	
 	     printf("%d,", recv_buffer[i]);
 	   }

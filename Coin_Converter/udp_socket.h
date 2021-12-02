@@ -169,6 +169,7 @@ extern struct timeval timeout;
 extern struct sockaddr_in servaddr, cliaddr;
 extern long time_stamp_before,time_stamp_after;
 extern unsigned char udp_buffer[UDP_BUFF_SIZE], response[RESPONSE_HEADER_MAX],EN_CODES[EN_CODES_MAX];
+
 union coversion{
 	uint32_t val32;
 	unsigned char data[4];
