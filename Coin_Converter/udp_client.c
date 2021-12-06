@@ -9,7 +9,6 @@
 #include <netinet/in.h>
  #define VER 255
 #define PORT     18000
-//#define PORT     629
 //#define PORT     8080
 #define MAXLINE 1024
   //2021-07-15 17:15:15
@@ -185,7 +184,7 @@ unsigned char buffer_withdraw[MAXLINE]={0,0,0,0,0,104,2,0,0,0,0,0,22,22,0,0,1,1,
 										0x3E,0x3E};
 */
 unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
-										116,131,27,188,155,90,121,30,246,108,181,251,170,91,4,123,206,62,66,27,192,181,
+									0x95,0x18,0xbd,0x24,0xd2,0x14,0x7e,0x8e,0x61,0x85,0x5b,0x4d,0x58,0x51,0xbf,0xd4,0x37,0xde,0x52,0xa8,0x27,0x6e,
 										0x3E,0x3E};
 
 

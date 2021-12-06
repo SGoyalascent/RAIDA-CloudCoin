@@ -58,7 +58,6 @@ int listen_request(){
 				client_s_addr = 0;	
 				memset(buffer,0,server_config_obj.bytes_per_frame);
 				n = recvfrom(sockfd, (unsigned char *)buffer, server_config_obj.bytes_per_frame,MSG_WAITALL, ( struct sockaddr *) &cliaddr,&len);
-				//printf("recvfrom, n: %d\n", n);
 				curr_frame_no=1;
 				printf("--------RECVD  FRAME NO ------ %d\n", curr_frame_no);
 				state = STATE_START_RECVD;	
@@ -147,9 +146,7 @@ void send_err_resp_header(int status_code){
 	}else{
 		ex_time= time_stamp_after-time_stamp_before;
 	}
-	//server_config_obj.raida_id = 11;
 
-	//printf("Error Status code %d  \n",status_code);
 	response[RES_RI] = server_config_obj.raida_id;
 	response[RES_SH] = 0;
 	response[RES_SS] = status_code;
@@ -164,9 +161,9 @@ void send_err_resp_header(int status_code){
 	response[RES_HS+3] = 0;
 	len=sizeof(cliaddr);
 	
-		sendto(sockfd, (const char *)response, size,
-			MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
-			len);
+	sendto(sockfd, (const char *)response, size,
+		MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
+		len);
 	
 }
 //-----------------------------------------------------------
@@ -201,24 +198,16 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 	uint16_t frames_expected,i=0,request_header_exp_len= REQ_HEAD_MIN_LEN, coin_id=0;
 	printf("---------------Validate Req Header-----------------\n");
 	
-	/*if(buff[REQ_EN]!=0){
-		for(i=1;i<EN_CODES_MAX+1;i++){
-			if(EN_CODES[buff[REQ_EN]]>0)
-				break;
-		}
-	}*/
 	if(buff[REQ_EN]!=0 && buff[REQ_EN]!=1){
 		return INVALID_EN_CODE;
 	}
 	request_header_exp_len = REQ_HEAD_MIN_LEN;
-	//printf("packet size: %d\n", packet_size);
 	if(packet_size< request_header_exp_len){
 		printf("Invalid request header  \n");
 		return INVALID_PACKET_LEN;
 	}
 	frames_expected = buff[REQ_FC+1];
 	frames_expected|=(((uint16_t)buff[REQ_FC])<<8);
-	//printf("No of frames expected :- %d\n", frames_expected);
 	if(frames_expected <=0  || frames_expected > FRAMES_MAX){
 		printf("Invalid frame count  \n");
 		return INVALID_FRAME_CNT;
@@ -231,7 +220,6 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 		printf("Invalid split id \n");
 		return INVALID_SPLIT_ID;
 	}
-	//printf("buff[req_ri] = %d\n", buff[REQ_RI]);
 	if(buff[REQ_RI]!=server_config_obj.raida_id){
 		printf("Invalid Raida id \n");
 		return WRONG_RAIDA;
@@ -243,15 +231,13 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 //-----------------------------------------------------------------------------------------
 unsigned char validate_request_body(unsigned int packet_len,unsigned char bytes_per_coin,unsigned int req_body_without_coins,int *req_header_min){
 	unsigned int no_of_coins=0;
-	*req_header_min = REQ_HEAD_MIN_LEN;// + EN_CODES[udp_buffer[REQ_EN]];	
+	*req_header_min = REQ_HEAD_MIN_LEN;
 	no_of_coins = (packet_len-(*req_header_min+req_body_without_coins))/bytes_per_coin;
 	printf("---------------Validate Request Body---------------------------\n");
-	//printf("Packet_len: %u\t\t  Req_Header_Min: %d\t\t Req_Body_Without_Coins: %u\t\t Bytes_Per_Coin: %d\n", packet_len, *req_header_min, req_body_without_coins, bytes_per_coin);
 	if((packet_len-(*req_header_min+req_body_without_coins))%bytes_per_coin!=0){
 		send_err_resp_header(LEN_OF_BODY_CANT_DIV_IN_COINS);
 		return 0;
 	}
-	//printf("No._of_COINS: %u\n", no_of_coins);
 	if(no_of_coins==0){
 		send_err_resp_header(LEN_OF_BODY_CANT_DIV_IN_COINS);
 		return 0;
@@ -267,7 +253,7 @@ unsigned char validate_request_body(unsigned int packet_len,unsigned char bytes_
 //  Validate coins and request body and return number of coins 
 //-----------------------------------------------------------------------------------------
 unsigned char validate_request_body_general(unsigned int packet_len,unsigned int req_body,int *req_header_min){
-	*req_header_min = REQ_HEAD_MIN_LEN;// + EN_CODES[udp_buffer[REQ_EN]];
+	*req_header_min = REQ_HEAD_MIN_LEN;
 	if(packet_len != (*req_header_min) + req_body){
 		send_err_resp_header(INVALID_PACKET_LEN);
 		return 0;
@@ -300,7 +286,7 @@ void execute_echo(unsigned int packet_len){
 //Coin converter 215
 //---------------------------------------------------------------
 
-void execute_coin_converter(unsigned int packet_len){
+void execute_coin_converter(unsigned int packet_len) {
 	int req_body = CH_BYTES_CNT + CMD_END_BYTES_CNT + LEGACY_RAIDA_TK_BYTES_CNT;
 	int req_header_min;
 	unsigned int index=0,size=0;
@@ -313,28 +299,32 @@ void execute_coin_converter(unsigned int packet_len){
 		return;
 	}
 	index = req_header_min+CH_BYTES_CNT;
-	//printf("Packet_len: %u\t Req_Header_Min: %d\t Req_Body: %u\t index: %d\n", packet_len, req_header_min, req_body, index);
-	printf("buffer: ");
+
+	unsigned char ticket_hex_bytes[45];
+	char* ptr =  &ticket_hex_bytes[0];
+	for(int j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
+		ptr += sprintf(ptr, "%02x", udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]);
+	}
+	printf("Ticket_no.:- %s\n", ticket_hex_bytes); 
+	index = RES_HS+HS_BYTES_CNT;
+
+   // Convert each byte of the ticket into Hexadecimal
+	/*
+
 	for(int j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
 		ticket_buffer[j]=udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
 		printf("%d  ", ticket_buffer[j]);
-	}
-	printf("\n");
-	size = RES_HS+HS_BYTES_CNT;
-	index = RES_HS+HS_BYTES_CNT;
+	} 
 
-
-   // Convert each byte of the ticket into Hexadecimal
 	unsigned char ticket_hex_bytes[45];
 	char* ptr =  &ticket_hex_bytes[0];
 
 	for(int i = 0; i < 22; i++) {
 
         ptr += sprintf(ptr, "%02X", ticket_buffer[i]);
-    }
-    printf("Ticket_no.:- %s\n", ticket_hex_bytes);
+    } */
 
-	// READ COIN_CONVERTER CONFIG FILE---------------------
+	//------- READ COIN_CONVERTER CONFIG FILE---------------------
 
 	char Host_ip[256], Database_name[256], Username[256], User_password[256], Encryption_key[256], Mode[256];
 	int listen_port;
@@ -370,9 +360,11 @@ void execute_coin_converter(unsigned int packet_len){
 		return;
     }
 
-	//SELECT THE SERIAL NO.'S ASSOCIATED WITH THE TICKET
+//SELECT statement
 	unsigned char query1[256];
-	uint32_t sr_nos[10000];
+	unsigned char query2[256];
+	unsigned char query3[256];
+	//uint32_t sr_nos[500];
 	MYSQL_RES *result;
 	unsigned int sr_nos_size;
 
@@ -388,25 +380,11 @@ void execute_coin_converter(unsigned int packet_len){
     }
 
 	result = mysql_store_result(con);
-	/*
-	if(result == NULL) {
-		unsigned int field_count = mysql_field_count(con);
-		printf("field_count: %u\n", field_count);
-		if(field_count == 0) {
-			printf("Query does not return data. It was not a SELECT\n");
-			int num_rows = mysql_affected_rows(con);
-		}
-		else{
-			printf("Query should have returned data\n");
-			printf("stderr: %s\n", mysql_error(con));
-		}
-	}
-	*/
 	if( mysql_errno(con) != 0) {
 		printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
-		status_code = FAIL;
-		printf("Status_code: FAIL\n");
+		status_code = NO_RESPONSE;
+		printf("Status_code: NO_RESPONSE\n");
 		send_response(status_code,size);
 		return;
 	}
@@ -414,7 +392,6 @@ void execute_coin_converter(unsigned int packet_len){
 	sr_nos_size = mysql_num_rows(result);
 	printf("No. of Rows: %d\n", sr_nos_size);
 	if(sr_nos_size == 0) {
-		printf("Ticket not in the database\n");
 		status_code = NO_TICKET_FOUND;
 		printf("Status_code: NO_TICKET_FOUND\n");
 		send_response(status_code,size);
@@ -425,49 +402,66 @@ void execute_coin_converter(unsigned int packet_len){
 		sr_nos_size = 300;
 	}
 
-	int k = 0, x = 0, y= 0;
+	int k = 0;
 	for(int i =0; i < sr_nos_size; i++) {
 		MYSQL_ROW row = mysql_fetch_row(result);                                    
-		sscanf(row[0], "%u", &sn_no.val); //sscanf(row[0], "%u", &sr_nos[i]); printf("k: %d\t --sn: %2s\t sr_no: %u\n",k, row[0], sr_nos[i]);
-		//printf("%u  ", sn_no.val);  ////sn_no.val = sr_nos[i];
+		scanf(row[0], "%u", &sn_no.val); 
+		//sr_nos[i] = sn_no.val;
+		printf("k: %d\t --sn: %2s\t sn_no.val: %u\n",k, row[0], sn_no.val);
 		k++;
-		printf("k: %d\t sr_no: %u  ",k, sr_nos[i]);
 
 		for(int j = 0; j < SN_BYTES_CNT; j++) {
 			response[index+(3*i)+j] = sn_no.buffer[SN_BYTES_CNT-1-j];
-			y++;
 			printf(" res[%d]: %d", index+(3*i)+j, response[index+(3*i)+j]);
 		} 
 		printf("\n");
-		x++;
+	/*
+		sprintf(query2, "DELETE FROM fixit_log WHERE sn = '%u'", sn_no.val);
+		if(mysql_query(con, query2)) {
+			printf("Failed to Delete record successfully\n")
+			printf("stderr: %s\n", mysql_error(con));
+			mysql_close(con);
+			return;
+		}
+
+		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sn_no.val);
+		if(mysql_query(con, query3)) {
+			printf("stderr: %s\n", mysql_error(con));
+			mysql_close(con);
+			return;
+		} */
 	}
-	printf("x: %d  y: %d\n", x,y);
+
+	mysql_free_result(result);
+	mysql_close(con);
 
 	status_code = SUCCESS;
 	size = RES_HS+HS_BYTES_CNT + (SN_BYTES_CNT*sr_nos_size);
 
 	send_response(status_code,size);
+	
 //---------------------------------------------------------------------
 	/*
 	//DELETE THE RECORDS FROM THE TABLE
 
 	char query2[256];
+	for(int i =0; i < sr_nos_size; i++) {
+		
+		sprintf(query2, "DELETE FROM fixit_log WHERE sn = '%u'", sr_nos[i]);
 
-	sprintf(query2, "DELETE FROM fixit_log WHERE rn= '%ld'", ticket_hex_bytes);
-
-	if(mysql_query(con, query2)) {
-        printf("stderr: %s\n", mysql_error(con));
-		mysql_close(con);
-		return;
-    }
+		if(mysql_query(con, query2)) {
+			printf("Failed to Delete record successfully\n")
+			printf("stderr: %s\n", mysql_error(con));
+			mysql_close(con);
+			return;
+		}
+	}
 
 //-----------------------------------------------------------------	
 
 	//UPDATE THE ans TABLE
-	//need to loop until all sn updated
 	
 	char query3[256];
-
 	for(int i =0; i < sr_nos_size; i++) {
 
 		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sr_nos[i] );
@@ -476,7 +470,5 @@ void execute_coin_converter(unsigned int packet_len){
 			mysql_close(con);
 			return;
 		}
-	}
-*/
-//-------------------------------------------------------
+	} */
 }
