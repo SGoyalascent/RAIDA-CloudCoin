@@ -351,9 +351,11 @@ void execute_coin_converter(unsigned int packet_len) {
 	}
 	index = req_header_min+CH_BYTES_CNT;
 	unsigned char *req_ptr = &udp_buffer[index];
+	unsigned char *key = &encrypt_key[0];
+	unsigned char *iv = &nounce[0];
 
 	load_encrypt_key();
-	crypt_ctr(&encrypt_key,req_ptr,req_body,&nounce);
+	crypt_ctr(key,req_ptr,req_body,iv);
 
 	unsigned char ticket_hex_bytes[45];
 	char* ptr =  &ticket_hex_bytes[0];
@@ -492,11 +494,14 @@ void execute_coin_converter(unsigned int packet_len) {
 	mysql_close(con);
 
 	status_code = SUCCESS;
+	index = RES_HS+HS_BYTES_CNT;
 	unsigned int response_body_size = SN_BYTES_CNT*sr_nos_size;
-	size = RES_HS+HS_BYTES_CNT + response_body_size;
+	size = RES_HS + HS_BYTES_CNT + response_body_size;
+	key = &encrypt_key[0];
+	iv = &nounce[0];
+	unsigned char *resp_ptr = &response[index];
 	
-	load_encrypt_key();
-	crypt_ctr(&encrypt_key,&response,response_body_size,&nounce);
+	crypt_ctr(key,resp_ptr,response_body_size,iv);
 	send_response(status_code,size);
 	
 //---------------------------------------------------------------------
