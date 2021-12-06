@@ -37,7 +37,7 @@ int load_raida_no(){
 		server_config_obj.raida_id=buff[0]-48;
 	}
 
-	server_config_obj.raida_id = 2;
+	//server_config_obj.raida_id = 2;
 	printf("Raida Id  :-%d \n", server_config_obj.raida_id);
 	fclose(fp_inp);
 	return 0;

@@ -1,4 +1,6 @@
 #include "udp_socket.h"
+#include "aes.h"
+
 int sockfd;
 fd_set select_fds;               
 struct timeval timeout;
@@ -8,6 +10,8 @@ struct sockaddr_in servaddr, cliaddr;
 long time_stamp_before,time_stamp_after;
 unsigned char udp_buffer[UDP_BUFF_SIZE],response[RESPONSE_HEADER_MAX],coin_table_id[5],EN_CODES[EN_CODES_MAX]={0};
 unsigned char free_thread_running_flg;
+uint8_t encrypt_key[ENCRYPTION_CONFIG_BYTES];
+uint8_t nounce[NOUNCE_BYTES_CNT];
 //-----------------------------------------------------------
 //Set time out for UDP frames
 //-----------------------------------------------------------
@@ -133,6 +137,52 @@ void process_request(unsigned int packet_len){
 	}
 	
 }
+
+//----------------------------------------------------------
+//Loads encrypt key from encryption_key.bin
+//--------------------------------------------------------- 
+int load_encrypt_key(){
+	FILE *fp_inp = NULL;
+	int i = 0;
+	unsigned char buff[ENCRYPTION_CONFIG_BYTES];
+	char path[256];
+	strcpy(path,execpath);
+	strcat(path,"/Data/encryption_key.bin");
+	printf("------------------------------\n");
+	printf("ENCRYPTION CONFIG KEY ..\n");
+	printf("------------------------------\n");
+	if ((fp_inp = fopen(path, "rb")) == NULL) {
+		printf("encryption_key.bin.bin Cannot be opened , exiting \n");
+		return 1;
+	}
+	if(fread(buff, 1, ENCRYPTION_CONFIG_BYTES, fp_inp)<(ENCRYPTION_CONFIG_BYTES)){
+		printf("Configuration parameters missing in encryption_key.bin \n");
+		return 1;
+	}
+	memcpy(encrypt_key,buff,ENCRYPTION_CONFIG_BYTES);
+	for(i=0;i<ENCRYPTION_CONFIG_BYTES;i++){
+	 	printf("%02x,",encrypt_key[i]);
+	}
+	printf("\n");
+	fclose(fp_inp);
+
+	memset(nounce,0,NOUNCE_BYTES_CNT);
+	//We take nouce 5 bytes
+	for(int i=0;i < 5;i++){
+		nounce[i] = udp_buffer[REQ_NO_1+i];
+	}
+	int j=0;
+	//We take nouce 3 bytes 
+	for(int i=5; i < 8;i++){
+		nounce[i] = udp_buffer[REQ_NO_6+j];
+		j++;
+	}
+	for(int i = 8;i < ENCRYPTION_CONFIG_BYTES; i++) {
+		nounce[i] = 0;
+	}
+	return 0;
+}
+
 //-----------------------------------------------------------
 // Prepare error response and send it.
 //-----------------------------------------------------------
@@ -190,6 +240,7 @@ void prepare_resp_header(unsigned char status_code){
 	response[RES_HS+1] = 0;
 	response[RES_HS+2] = 0;
 	response[RES_HS+3] = 0;
+
 }
 //-----------------------------------------------------------
 //  Validate request header
@@ -299,6 +350,10 @@ void execute_coin_converter(unsigned int packet_len) {
 		return;
 	}
 	index = req_header_min+CH_BYTES_CNT;
+	unsigned char *req_ptr = &udp_buffer[index];
+
+	load_encrypt_key();
+	crypt_ctr(&encrypt_key,req_ptr,req_body,&nounce);
 
 	unsigned char ticket_hex_bytes[45];
 	char* ptr =  &ticket_hex_bytes[0];
@@ -307,6 +362,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	}
 	printf("Ticket_no.:- %s\n", ticket_hex_bytes); 
 	index = RES_HS+HS_BYTES_CNT;
+	size = RES_HS+HS_BYTES_CNT;
 
    // Convert each byte of the ticket into Hexadecimal
 	/*
@@ -405,7 +461,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	int k = 0;
 	for(int i =0; i < sr_nos_size; i++) {
 		MYSQL_ROW row = mysql_fetch_row(result);                                    
-		scanf(row[0], "%u", &sn_no.val); 
+		sscanf(row[0], "%u", &sn_no.val); 
 		//sr_nos[i] = sn_no.val;
 		printf("k: %d\t --sn: %2s\t sn_no.val: %u\n",k, row[0], sn_no.val);
 		k++;
@@ -436,8 +492,11 @@ void execute_coin_converter(unsigned int packet_len) {
 	mysql_close(con);
 
 	status_code = SUCCESS;
-	size = RES_HS+HS_BYTES_CNT + (SN_BYTES_CNT*sr_nos_size);
-
+	unsigned int response_body_size = SN_BYTES_CNT*sr_nos_size;
+	size = RES_HS+HS_BYTES_CNT + response_body_size;
+	
+	load_encrypt_key();
+	crypt_ctr(&encrypt_key,&response,response_body_size,&nounce);
 	send_response(status_code,size);
 	
 //---------------------------------------------------------------------

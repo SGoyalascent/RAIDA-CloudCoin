@@ -15,6 +15,7 @@
 //--------------------------------------------
 #define SERVER_CONFIG_BYTES 				4
 #include "udp_socket.h"
+#include "aes.h"
 
 struct server_config {
 	unsigned char raida_id;
