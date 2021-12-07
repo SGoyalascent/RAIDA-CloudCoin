@@ -12,17 +12,24 @@ using namespace std;
 
 void CheckRaidaConfig() {
     
-    std::string path = "opt/raida/";
+    std::string path = "opt/RAIDA-CloudCoin/RAIDA_AGENT/Testing/raida/";
     for (const auto & entry : fs::directory_iterator(path)) {
         std::cout << "Entry_Path: " <<entry.path() << std::endl;
         std::cout << "Entry: " <<entry << std::endl;
 
     }
 
-    fs::path filePath("opt/raida/agent.primary.config");
+    fs::path filePath("opt/RAIDA-CloudCoin/RAIDA_AGENT/Testing/raida/agent.primary.config");
     std::error_code ec;
-    if(fs::exists(filepath, ec)) {
+    if(fs::exists(filePath, ec)) {
         cout <<"File exists"<<endl;
+        std::cerr <<ec.message() ;
+    }
+
+    fs::path filePath("opt/RAIDA-CloudCoin/RAIDA_AGENT/Testing/raida/agent.mirror.config");
+    std::error_code ec;
+    if(fs::exists(filePath, ec)) {
+        cout <<"File not exists"<<endl;
         std::cerr <<ec.message() ;
     }
 
