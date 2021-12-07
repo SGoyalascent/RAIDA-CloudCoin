@@ -207,6 +207,8 @@ void execute_coin_converter(unsigned int);
 void send_response(unsigned char ,unsigned int );
 void send_err_resp_header(int );
 void execute_echo(unsigned int);
+void print_udp_buffer(int);
+void decrypt_request_body(int);
 unsigned char validate_request_header(unsigned char *,int );
 unsigned char validate_request_body_general(unsigned int,unsigned int ,int *);
 unsigned char validate_request_body(unsigned int ,unsigned char,unsigned int ,int *);

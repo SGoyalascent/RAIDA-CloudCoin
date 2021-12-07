@@ -62,6 +62,7 @@ int listen_request(){
 				client_s_addr = 0;	
 				memset(buffer,0,server_config_obj.bytes_per_frame);
 				n = recvfrom(sockfd, (unsigned char *)buffer, server_config_obj.bytes_per_frame,MSG_WAITALL, ( struct sockaddr *) &cliaddr,&len);
+				printf("n: %d\n", n);
 				curr_frame_no=1;
 				printf("--------RECVD  FRAME NO ------ %d\n", curr_frame_no);
 				state = STATE_START_RECVD;	
@@ -105,9 +106,11 @@ int listen_request(){
 				}	
 			break;			
 			case STATE_END_RECVD:
+					decrypt_request_body(n);
+					print_udp_buffer(n);
 					if(udp_buffer[index-1]!=REQ_END|| udp_buffer[index-2]!=REQ_END){
 						send_err_resp_header(INVALID_END_OF_REQ);
-						printf("Invalid end of packet  \n");
+						printf("--Invalid end of packet  \n");
 					}else{
 						printf("---------------------END RECVD----------------------------------------------\n");
 						printf("---------------------PROCESSING REQUEST-----------------------------\n");
@@ -135,7 +138,6 @@ void process_request(unsigned int packet_len){
 		case CMD_ECHO:						execute_echo(packet_len);break;
 		default:							send_err_resp_header(INVALID_CMD);	
 	}
-	
 }
 
 //----------------------------------------------------------
@@ -332,6 +334,26 @@ void execute_echo(unsigned int packet_len){
 	size    =  RES_HS+HS_BYTES_CNT;
 	send_response(SUCCESS,size);
 }
+//-------------------------------------------------------------
+//DECRYPT REQUEST BODY
+//-------------------------------------------------------------
+void decrypt_request_body(int n) {
+	
+	int req_body = n - 22;
+	unsigned char *req_ptr = &udp_buffer[22];
+	unsigned char *key = &encrypt_key[0];
+	unsigned char *iv = &nounce[0];
+
+	load_encrypt_key();
+	crypt_ctr(key,req_ptr,req_body,iv);
+}
+
+void print_udp_buffer(int n) {
+	printf("udp_buffer: ");
+	for(int i = 0; i < n; i++) {
+		printf("%d  ", udp_buffer[i]);
+	}
+}
 
 //---------------------------------------------------------------
 //Coin converter 215
@@ -349,21 +371,15 @@ void execute_coin_converter(unsigned int packet_len) {
 		send_err_resp_header(EMPTY_REQ_BODY);
 		return;
 	}
-	
-	index = req_header_min+CH_BYTES_CNT;
+
+	index = req_header_min + CH_BYTES_CNT;
 	printf("req_header_min: %d  index: %u\n", req_header_min, index);
-	unsigned char *req_ptr = &udp_buffer[index];
-	unsigned char *key = &encrypt_key[0];
-	unsigned char *iv = &nounce[0];
-
-	load_encrypt_key();
-	crypt_ctr(key,req_ptr,req_body,iv);
-
+	printf("buffer:  ");
 	for(int j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
 		ticket_buffer[j] = udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
 		printf("%d  ", ticket_buffer[j]);
 	} 
-
+	printf("\n");
 	unsigned char ticket_hex_bytes[45];
 	char* ptr =  &ticket_hex_bytes[0];
 	for(int j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
