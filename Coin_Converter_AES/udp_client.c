@@ -71,20 +71,6 @@ int load_encrypt_key(){
 	printf("\n");
 	fclose(fp_inp);
 
-	memset(nounce,0,NOUNCE_BYTES_CNT);
-	//We take nouce 5 bytes
-	for(int i=0;i < 5;i++){
-		nounce[i] = udp_buffer[REQ_NO_1+i];
-	}
-	int j=0;
-	//We take nouce 3 bytes 
-	for(int i=5; i < 8;i++){
-		nounce[i] = udp_buffer[REQ_NO_6+j];
-		j++;
-	}
-	for(int i = 8;i < ENCRYPTION_CONFIG_BYTES; i++) {
-		nounce[i] = 0;
-	}
 	return 0;
 }
 
@@ -342,7 +328,24 @@ unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,
 //----------------------------------------------------------
 //Loads encrypt key from encryption_key.bin
 //--------------------------------------------------------- 
+	
 	getexepath();
+
+	memset(nounce,0,NOUNCE_BYTES_CNT);
+	//We take nouce 5 bytes
+	for(int i=0;i < 5;i++){
+		nounce[i] = buffer[REQ_NO_1+i];
+	}
+	int j=0;
+	//We take nouce 3 bytes 
+	for(int i=5; i < 8;i++){
+		nounce[i] = buffer[REQ_NO_6+j];
+		j++;
+	}
+	for(int i = 8;i < ENCRYPTION_CONFIG_BYTES; i++) {
+		nounce[i] = 0;
+	}
+
 	int send_req = len - 22;
 	unsigned char *req_ptr = &buffer[22];
 	unsigned char *key = &encrypt_key[0];
