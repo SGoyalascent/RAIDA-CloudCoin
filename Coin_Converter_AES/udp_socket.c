@@ -349,7 +349,9 @@ void execute_coin_converter(unsigned int packet_len) {
 		send_err_resp_header(EMPTY_REQ_BODY);
 		return;
 	}
+	
 	index = req_header_min+CH_BYTES_CNT;
+	printf("req_header_min: %d  index: %u\n", req_header_min, index);
 	unsigned char *req_ptr = &udp_buffer[index];
 	unsigned char *key = &encrypt_key[0];
 	unsigned char *iv = &nounce[0];
