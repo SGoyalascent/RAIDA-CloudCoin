@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "E:\\Libraries\\MSYS2_64\\mingw64\\include\\c++\\10.3.0",
+                "E:\\Libraries\\mysql-8.0.27-winx64\\include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "intelliSenseMode": "windows-gcc-x64",
+            "browse": {
+                "path": [
+                    "E:\\Libraries\\mysql-8.0.27-winx64\\include",
+                    "${workspaceFolder}",
+                    "E:\\Libraries\\MSYS2_64\\mingw64\\include\\c++\\10.3.0"
+                ]
+            }
+        }
+    ],
+    "version": 4
+}

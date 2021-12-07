@@ -12,7 +12,6 @@
 #include <sys/types.h>
 #include <mysql.h>
 #include "raida_server.h"
-#include "aes.h"
 
 //--------------------------------------------------------------------
 #define FRAME_TIME_OUT_SECS		1 
@@ -34,17 +33,7 @@
 #define REQ_FC  					14
 #define REQ_EN  					16
 
-#define REQ_NO_1  				9
-#define REQ_NO_2  				10
-#define REQ_NO_3  				11
-#define REQ_NO_4  				12
-#define REQ_NO_5  				13
-
-#define REQ_NO_6				19
-#define REQ_NO_7				20
-#define REQ_NO_8				21
-
-#define REQ_HEAD_MIN_LEN 		22
+#define REQ_HEAD_MIN_LEN 			22
 //-------------------------------------------------------------
 #define TY_BYTES_CNT				1
 #define TT_BYTES_CNT				1
@@ -72,10 +61,8 @@
 #define TIME_STAMP_BYTES_CNT		6
 #define FREE_ID_SERV_LOCK_TIME		6
 #define DT_BYTES_CNT				7	
-#define NOUNCE_BYTES_CNT         8
 #define RESP_BUFF_MIN_CNT			12
 #define FIX_SRNO_MATCH_CNT		13
-#define ENCRYPTION_CONFIG_BYTES  16
 #define GUID_BYTES_CNT 			16
 #define AN_BYTES_CNT 			16
 #define PAN_BYTES_CNT 			16
@@ -88,14 +75,13 @@
 #define META_DATA_BYTES_CNT		50
 #define REQ_END					62
 #define KEY_HASH_BYTES_CNT		64
-
 //-------------------------------------------------
 #define KEYS_MAX				100
 #define ROWS_MUL_FACTOR			100
 #define MAX_ROWS_SHOW_STAT		255	
 #define FRAMES_MAX				100
 #define EN_CODES_MAX			255
-#define DEFAULT_YEAR			2000
+#define DEFAULT_YEAR				2000
 #define COINS_MAX				2000
 #define SECS_IN_DAY				60 * 60 *24
 //#define SECS_IN_DAY				1
@@ -200,7 +186,6 @@ extern union serial_no sn_no;
 int listen_request(); 
 void* listen_request_raida(void *arg);
 int init_udp_socket();
-int load_encrypt_key();
 void set_time_out(unsigned char);
 void process_request(unsigned int);
 void execute_coin_converter(unsigned int);
