@@ -504,8 +504,8 @@ void execute_coin_converter(unsigned int packet_len) {
 	index = RES_HS+HS_BYTES_CNT;
 	unsigned int response_body_size = SN_BYTES_CNT*sr_nos_size;
 	size = RES_HS + HS_BYTES_CNT + response_body_size;
-	key = &encrypt_key[0];
-	iv = &nounce[0];
+	unsigned char *key = &encrypt_key[0];
+	unsigned char *iv = &nounce[0];
 	unsigned char *resp_ptr = &response[index];
 	
 	crypt_ctr(key,resp_ptr,response_body_size,iv);

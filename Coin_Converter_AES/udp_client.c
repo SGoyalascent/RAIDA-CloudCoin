@@ -7,12 +7,87 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include "aes.h"
+
  #define VER 255
 #define PORT     18000
 //#define PORT     8080
 #define MAXLINE 1024
+#define ENCRYPTION_CONFIG_BYTES  16
+#define NOUNCE_BYTES_CNT         8
+#define REQ_NO_1  				9
+#define REQ_NO_2  				10
+#define REQ_NO_3  				11
+#define REQ_NO_4  				12
+#define REQ_NO_5  				13
+
+#define REQ_NO_6				19
+#define REQ_NO_7				20
+#define REQ_NO_8				21
   //2021-07-15 17:15:15
 // Driver code
+
+char execpath[256];
+uint8_t encrypt_key[ENCRYPTION_CONFIG_BYTES];
+uint8_t nounce[NOUNCE_BYTES_CNT];
+
+void getexepath()
+{
+	char buff[256];
+	int count = readlink( "/proc/self/exe", buff, 256);
+	int i=0,slash_pos;
+	while(buff[i]!='\0'){
+		if(buff[i]=='/'){
+			slash_pos = i;
+		}
+		i++;
+	}	
+	strncpy(execpath,buff,slash_pos);
+}
+	
+int load_encrypt_key(){
+
+	FILE *fp_inp = NULL;
+	int i = 0;
+	unsigned char buff[ENCRYPTION_CONFIG_BYTES];
+	char path[256];
+	strcpy(path,execpath);
+	strcat(path,"/Data/encryption_key.bin");
+	printf("------------------------------\n");
+	printf("ENCRYPTION CONFIG KEY ..\n");
+	printf("------------------------------\n");
+	if ((fp_inp = fopen(path, "rb")) == NULL) {
+		printf("encryption_key.bin.bin Cannot be opened , exiting \n");
+		return 1;
+	}
+	if(fread(buff, 1, ENCRYPTION_CONFIG_BYTES, fp_inp)<(ENCRYPTION_CONFIG_BYTES)){
+		printf("Configuration parameters missing in encryption_key.bin \n");
+		return 1;
+	}
+	memcpy(encrypt_key,buff,ENCRYPTION_CONFIG_BYTES);
+	for(i=0;i<ENCRYPTION_CONFIG_BYTES;i++){
+		printf("%02x  ",encrypt_key[i]);
+	}
+	printf("\n");
+	fclose(fp_inp);
+
+	memset(nounce,0,NOUNCE_BYTES_CNT);
+	//We take nouce 5 bytes
+	for(int i=0;i < 5;i++){
+		nounce[i] = udp_buffer[REQ_NO_1+i];
+	}
+	int j=0;
+	//We take nouce 3 bytes 
+	for(int i=5; i < 8;i++){
+		nounce[i] = udp_buffer[REQ_NO_6+j];
+		j++;
+	}
+	for(int i = 8;i < ENCRYPTION_CONFIG_BYTES; i++) {
+		nounce[i] = 0;
+	}
+	return 0;
+}
+
 int main() {
     int sockfd,i=0;
     unsigned char buffer[MAXLINE], recv_buffer[MAXLINE];	
@@ -183,17 +258,16 @@ unsigned char buffer_withdraw[MAXLINE]={0,0,0,0,0,104,2,0,0,0,0,0,22,22,0,0,1,1,
 										0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 										0x3E,0x3E};
 */
-/*unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
-									0xf2,0xd6,0xba,0x8c,0xf7,0xad,0x91,0x42,0x20,0x07,0x3d,0x5a,0xbd,0x7b,0x32,0x3f,0x03,0x3e,0xb5,0xe7,0x3b,0x54,
-										0x3E,0x3E}; */
-unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
+unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
 										121,235,255,24,91,151,152,78,82,115,61,216,134,106,169,152,01,62,143,230,250,37,
-										0x3E,0x3E};
+										0x3E, 0x3E};
+
+
 //25 fa  e6  8f  3e 01 98   a9  6a 86  d8  3d 73  52 4e 98   97 5b 18 ff  eb  79
 //37 250 230 143 62 01 152 169 106 134 216 61 115 82 78 152 151 91 24 255 235 121
 
-//0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,155,102,254,83,80,231,201,183,118,54,232,99,
-//121,39,162,129,195,152,52,31,134,73,205,131,241,174,235,124,153,224,16,234,92,87,162,153,226,38,67,29
+//0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,155,102,254,83,80,231,201,183,118,54,232,99,121,39,162,129,
+//195,152,52,31,134,73,205,131,241,174,235,124,153,224,16,234,92,87,162,153,226,38,67,29
 
 	    struct sockaddr_in     servaddr;
 	    /*char md5[64],result[64];	
@@ -264,7 +338,21 @@ unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,
 		if(buffer[i]==62 && buffer[i-1]==62)
 			break;	
 	    }
-	   printf("Len = %d %d\n", len,i);	
+	   printf("Len = %d %d\n", len,i);
+//----------------------------------------------------------
+//Loads encrypt key from encryption_key.bin
+//--------------------------------------------------------- 
+	getexepath();
+	int send_req = len - 22;
+	unsigned char *req_ptr = &buffer[22];
+	unsigned char *key = &encrypt_key[0];
+	unsigned char *iv = &nounce[0];
+
+	int status  = load_encrypt_key();
+	crypt_ctr(key,req_ptr,send_req,iv);
+
+//-----------------------------------------------------------------------
+
 	    sendto(sockfd, (const char *)buffer, len,
 	        MSG_CONFIRM, (const struct sockaddr *) &servaddr, 
 	            sizeof(servaddr));
