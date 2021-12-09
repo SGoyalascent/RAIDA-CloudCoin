@@ -72,10 +72,10 @@
 #define TIME_STAMP_BYTES_CNT		6
 #define FREE_ID_SERV_LOCK_TIME		6
 #define DT_BYTES_CNT				7	
-#define NOUNCE_BYTES_CNT         8
 #define RESP_BUFF_MIN_CNT			12
 #define FIX_SRNO_MATCH_CNT		13
 #define ENCRYPTION_CONFIG_BYTES  16
+#define NOUNCE_BYTES_CNT         16
 #define GUID_BYTES_CNT 			16
 #define AN_BYTES_CNT 			16
 #define PAN_BYTES_CNT 			16

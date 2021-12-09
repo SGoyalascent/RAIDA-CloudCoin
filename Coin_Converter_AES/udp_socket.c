@@ -53,7 +53,7 @@ int listen_request(){
 	socklen_t len=sizeof(struct sockaddr_in);
 	buffer = (unsigned char *) malloc(server_config_obj.bytes_per_frame);
 	while(1){
-		printf("state: %d", state);
+		//printf("state: %d", state);
 		switch(state){
 			case STATE_WAIT_START:
 				printf("---------------------WAITING FOR REQ HEADER ----------------------\n");
@@ -107,7 +107,7 @@ int listen_request(){
 			break;			
 			case STATE_END_RECVD:
 					decrypt_request_body(n);
-					print_udp_buffer(n);
+					//print_udp_buffer(n);
 					if(udp_buffer[index-1]!=REQ_END|| udp_buffer[index-2]!=REQ_END){
 						send_err_resp_header(INVALID_END_OF_REQ);
 						printf("--Invalid end of packet  \n");
@@ -135,7 +135,7 @@ void process_request(unsigned int packet_len){
 	switch(cmd_no){
 	
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
-		case CMD_ECHO:						execute_echo(packet_len);break;
+		//case CMD_ECHO:						execute_echo(packet_len);break;
 		default:							send_err_resp_header(INVALID_CMD);	
 	}
 }
@@ -151,8 +151,8 @@ int load_encrypt_key(){
 	strcpy(path,execpath);
 	strcat(path,"/Data/encryption_key.bin");
 	printf("------------------------------\n");
-	printf("ENCRYPTION CONFIG KEY ..\n");
-	printf("------------------------------\n");
+	printf("ENCRYPTION CONFIG KEY\n");
+	//printf("------------------------------\n");
 	if ((fp_inp = fopen(path, "rb")) == NULL) {
 		printf("encryption_key.bin.bin Cannot be opened , exiting \n");
 		return 1;
@@ -163,11 +163,11 @@ int load_encrypt_key(){
 	}
 	memcpy(encrypt_key,buff,ENCRYPTION_CONFIG_BYTES);
 	for(i=0;i<ENCRYPTION_CONFIG_BYTES;i++){
-	 	printf("%02x  ",encrypt_key[i]);
+	 	printf("%02x ",encrypt_key[i]);
 	}
 	printf("\n");
 	fclose(fp_inp);
-
+	
 	memset(nounce,0,NOUNCE_BYTES_CNT);
 	//We take nouce 5 bytes
 	for(int i=0;i < 5;i++){
@@ -179,8 +179,8 @@ int load_encrypt_key(){
 		nounce[i] = udp_buffer[REQ_NO_6+j];
 		j++;
 	}
-	for(int i = 8;i < ENCRYPTION_CONFIG_BYTES; i++) {
-		nounce[i] = 0;
+	for(int i =0; i < NOUNCE_BYTES_CNT; i++) {
+		printf("%d  ", nounce[i]);
 	}
 	return 0;
 }
@@ -410,7 +410,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	MYSQL *con = mysql_init(NULL);
     if(con == NULL) {
         printf("Error_code: %u\t stderr: %s\n",mysql_errno(con), mysql_error(con));
-		status_code = NO_RESPONSE;
+		status_code = FAIL;
 		printf("Status_code: NO_RESPONSE\n");
 		send_response(status_code,size);
 		return;
@@ -419,7 +419,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	if(mysql_real_connect(con, Host_ip, Username, User_password, Database_name, listen_port, NULL, 0) == NULL) {
 		printf("Error_code: %u\t stderr: %s\n",mysql_errno(con), mysql_error(con));
 		mysql_close(con);
-		status_code = NO_RESPONSE;
+		status_code = FAIL;
 		printf("Status_code: NO_RESPONSE\n");
 		send_response(status_code,size);
 		return;
@@ -429,7 +429,6 @@ void execute_coin_converter(unsigned int packet_len) {
 	unsigned char query1[256];
 	unsigned char query2[256];
 	unsigned char query3[256];
-	//uint32_t sr_nos[500];
 	MYSQL_RES *result;
 	unsigned int sr_nos_size;
 
@@ -438,7 +437,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	if(mysql_errno(con) != 0) {
         printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
-		status_code = NO_RESPONSE;
+		status_code = FAIL;
 		printf("Status_code: NO_RESPONSE\n");
 		send_response(status_code,size);
 		return;
@@ -448,7 +447,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	if( mysql_errno(con) != 0) {
 		printf("stderr: %s\n", mysql_error(con));
 		mysql_close(con);
-		status_code = NO_RESPONSE;
+		status_code = FAIL;
 		printf("Status_code: NO_RESPONSE\n");
 		send_response(status_code,size);
 		return;
@@ -470,9 +469,8 @@ void execute_coin_converter(unsigned int packet_len) {
 	int k = 0;
 	for(int i =0; i < sr_nos_size; i++) {
 		MYSQL_ROW row = mysql_fetch_row(result);                                    
-		sscanf(row[0], "%u", &sn_no.val); 
-		//sr_nos[i] = sn_no.val;
-		printf("k: %d\t --sn: %2s\t sn_no.val: %u\n",k, row[0], sn_no.val);
+		sscanf(row[0], "%u", &sn_no.val);
+		printf("k: %d\t --sn_no.val: %u\n",k, sn_no.val);
 		k++;
 
 		for(int j = 0; j < SN_BYTES_CNT; j++) {
@@ -489,7 +487,7 @@ void execute_coin_converter(unsigned int packet_len) {
 			return;
 		}
 
-		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sn_no.val);
+		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%u' AND NN = 1", sn_no.val);
 		if(mysql_query(con, query3)) {
 			printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
@@ -511,35 +509,5 @@ void execute_coin_converter(unsigned int packet_len) {
 	crypt_ctr(key,resp_ptr,response_body_size,iv);
 	send_response(status_code,size);
 	
-//---------------------------------------------------------------------
-	/*
-	//DELETE THE RECORDS FROM THE TABLE
 
-	char query2[256];
-	for(int i =0; i < sr_nos_size; i++) {
-		
-		sprintf(query2, "DELETE FROM fixit_log WHERE sn = '%u'", sr_nos[i]);
-
-		if(mysql_query(con, query2)) {
-			printf("Failed to Delete record successfully\n")
-			printf("stderr: %s\n", mysql_error(con));
-			mysql_close(con);
-			return;
-		}
-	}
-
-//-----------------------------------------------------------------	
-
-	//UPDATE THE ans TABLE
-	
-	char query3[256];
-	for(int i =0; i < sr_nos_size; i++) {
-
-		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%d' AND NN = 1", sr_nos[i] );
-		if(mysql_query(con, query3)) {
-			printf("stderr: %s\n", mysql_error(con));
-			mysql_close(con);
-			return;
-		}
-	} */
 }
