@@ -71,10 +71,10 @@ int load_server_config() {
 	*/
 
 	binary.byte[0] = buf[0];
-    binary.byte[1] = buf[1];
+    binary.byte[1] = buff[1];
     server_config_obj.port_number = binary.val;
-    binary.byte[0] = buf[2];
-    binary.byte[1] = buf[3];
+    binary.byte[0] = buff[2];
+    binary.byte[1] = buff[3];
     server_config_obj.bytes_per_frame = binary.val;
 
 	printf("------------------------------\n");

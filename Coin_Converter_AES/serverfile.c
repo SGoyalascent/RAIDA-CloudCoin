@@ -39,7 +39,7 @@ void getexepath()
 void write_server_config() {
 
     unsigned char buf[SERVER_CONFIG_BYTES];
-    unsigned int port_number = 1800;
+    unsigned int port_number = 18000;
     binary.val = port_number;
     buf[0] = binary.byte[0];
     buf[1] = binary.byte[1];
@@ -81,7 +81,7 @@ int load_server_config() {
     fp_inp = fopen(path, "rb");
     if(fp_inp == NULL) {
         printf("server.bin Cannot be opened , exiting \n");
-		return;
+		return 1;
     }
 
     fread(buf, 2, 2, fp_inp); 
