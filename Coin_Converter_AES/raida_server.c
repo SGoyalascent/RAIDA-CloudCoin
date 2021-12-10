@@ -1,6 +1,7 @@
 #include"raida_server.h"
 char execpath[256];
 struct server_config server_config_obj;
+union bytes binary;
 //----------------------------------------------------------
 //Welcome message
 //----------------------------------------------------------
@@ -59,6 +60,7 @@ int load_server_config() {
 		printf("Configuration parameters missing in server.bin \n");
 		return 1;
 	}
+	/*
 	server_config_obj.port_number = buff[1];
 	server_config_obj.port_number|= (((uint16_t)buff[0])<<8);
 	//server_config_obj.port_number = 18000;
@@ -66,7 +68,15 @@ int load_server_config() {
 	server_config_obj.bytes_per_frame = buff[3];
 	server_config_obj.bytes_per_frame |= (((uint16_t)buff[2])<<8);
 	//server_config_obj.bytes_per_frame = 1024;
-	
+	*/
+
+	binary.byte[0] = buf[0];
+    binary.byte[1] = buf[1];
+    server_config_obj.port_number = binary.val;
+    binary.byte[0] = buf[2];
+    binary.byte[1] = buf[3];
+    server_config_obj.bytes_per_frame = binary.val;
+
 	printf("------------------------------\n");
 	printf("Server Configuration Details..\n");
 	printf("------------------------------\n");

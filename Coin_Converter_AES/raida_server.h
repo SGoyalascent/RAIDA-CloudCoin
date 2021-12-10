@@ -22,10 +22,18 @@ struct server_config {
 	unsigned int port_number;
 	unsigned int bytes_per_frame;
 };
+
+union bytes {
+    unsigned int val;
+    unsigned char byte[2];
+};
+
+
 void welcomeMsg();
 int load_raida_no();
 int load_server_config();
 long get_time_cs();
 extern char execpath[256];
 extern struct server_config server_config_obj;
+extern union bytes binary;
 #endif
