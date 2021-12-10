@@ -70,7 +70,7 @@ int load_server_config() {
 	//server_config_obj.bytes_per_frame = 1024;
 	*/
 
-	binary.byte[0] = buf[0];
+	binary.byte[0] = buff[0];
     binary.byte[1] = buff[1];
     server_config_obj.port_number = binary.val;
     binary.byte[0] = buff[2];
