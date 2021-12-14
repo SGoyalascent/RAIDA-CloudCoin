@@ -31,7 +31,7 @@ int load_raida_no(){
 		printf("Configuration parameters missing in raida_no.txt \n");
 		return 1;
 	}
-	if(size == 2){
+	if(size >= 2){
 		server_config_obj.raida_id = (buff[0]-48)*10;
 		server_config_obj.raida_id+= (buff[1]-48);
 	}else{
