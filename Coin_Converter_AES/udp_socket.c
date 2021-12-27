@@ -481,7 +481,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	
 		sprintf(query2, "DELETE FROM fixit_log WHERE sn = '%u'", sn_no.val);
 		if(mysql_query(con, query2)) {
-			printf("Failed to Delete record successfully\n")
+			printf("Failed to Delete record successfully\n");
 			printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
 			return;
