@@ -135,7 +135,7 @@ void process_request(unsigned int packet_len){
 	switch(cmd_no){
 	
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
-		//case CMD_ECHO:						execute_echo(packet_len);break;
+		case CMD_ECHO:						execute_echo(packet_len);break;
 		default:							send_err_resp_header(INVALID_CMD);	
 	}
 }
@@ -392,7 +392,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	//------- READ COIN_CONVERTER CONFIG FILE---------------------
 
 	char Host_ip[256], Database_name[256], Username[256], User_password[256], Encryption_key[256], Mode[256];
-	int listen_port;
+	int listen_port, serial_no_cnt;
 
     printf("Welcome to MySql Database\n");
     FILE *myfile = fopen("Coin_Converter.config", "r");
@@ -400,8 +400,8 @@ void execute_coin_converter(unsigned int packet_len) {
         printf("Config file not found\n");
 		return;
     }
-    fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s", Host_ip, Database_name,
-                                                  Username, User_password, &listen_port, Encryption_key, Mode);
+    fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s Serial_no_count = %d", Host_ip, Database_name,
+                                                  Username, User_password, &listen_port, Encryption_key, Mode, serial_no_cnt);
     fclose(myfile);
     //printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
 
@@ -462,8 +462,13 @@ void execute_coin_converter(unsigned int packet_len) {
 		return;
 
 	}
+	/*
 	if(sr_nos_size > 300) {
 		sr_nos_size = 300;
+	} */
+
+	if(sr_nos_size > serial_no_cnt) {
+		sr_nos_size = serial_no_cnt;
 	}
 
 	int k = 0;
@@ -481,7 +486,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	
 		sprintf(query2, "DELETE FROM fixit_log WHERE sn = '%u'", sn_no.val);
 		if(mysql_query(con, query2)) {
-			printf("Failed to Delete record successfully\n");
+			printf("Failed to Delete record successfully\n")
 			printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
 			return;
