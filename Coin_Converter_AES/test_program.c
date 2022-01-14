@@ -22,6 +22,19 @@ int main() {
     char ip_address[1][256] = {"73.66.181.49"};
     int port_no = 18000;
 
+    char ip[25][256];
+
+    FILE *myfile = fopen("legacy_raida.txt", "r");
+    if(myfile == NULL) {
+        printf("file not found\n");
+		return;
+    }
+    for(int i = 0; i < 25; i++) {
+        fscanf(myfile, "legacy_ip :- %255s", &ip[i][0]);
+        printf("ip_%d = %s\n", i, ip[i]);
+    }
+    fclose(myfile);
+/*
     memcpy(buffer,buffer_echo,MAXLINE);	
 
     if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
@@ -50,10 +63,11 @@ int main() {
                 &len);
     printf("n: %d\n", n);
 
-    for(i=0;i<n;i++){	
+    for(int i=0;i<n;i++){	
         printf("%d,", recv_buffer[i]);
     }
     printf("\n");
     close(sockfd);
+    */
     return 0;
 }
