@@ -401,9 +401,9 @@ void execute_coin_converter(unsigned int packet_len) {
 		return;
     }
     fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s Serial_no_count = %d", Host_ip, Database_name,
-                                                  Username, User_password, &listen_port, Encryption_key, Mode, serial_no_cnt);
+                                                  Username, User_password, &listen_port, Encryption_key, Mode, &serial_no_cnt);
     fclose(myfile);
-    //printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
+   //printf("Host = %s\t\t Database = %s\t\t Username = %s\t\t Password = %s\t\t listenport = %d\t\t encryption_key = %s\t\t mode = %s\n", Host_ip, Database_name, Username, User_password, listen_port, Encryption_key, Mode);
 
 // -----------------------Initialize a connection to the Database---------------------
 
@@ -486,7 +486,7 @@ void execute_coin_converter(unsigned int packet_len) {
 	
 		sprintf(query2, "DELETE FROM fixit_log WHERE sn = '%u'", sn_no.val);
 		if(mysql_query(con, query2)) {
-			printf("Failed to Delete record successfully\n")
+			printf("Failed to Delete record successfully\n");
 			printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
 			return;
@@ -494,6 +494,7 @@ void execute_coin_converter(unsigned int packet_len) {
 
 		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%u' AND NN = 1", sn_no.val);
 		if(mysql_query(con, query3)) {
+			printf("Failed to Update record successfully\n");
 			printf("stderr: %s\n", mysql_error(con));
 			mysql_close(con);
 			return;
