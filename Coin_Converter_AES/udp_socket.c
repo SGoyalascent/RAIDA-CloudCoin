@@ -106,7 +106,7 @@ int listen_request(){
 				}	
 			break;			
 			case STATE_END_RECVD:
-					decrypt_request_body(n);
+					decrypt_request_body(index);
 					//print_udp_buffer(n);
 					if(udp_buffer[index-1]!=REQ_END|| udp_buffer[index-2]!=REQ_END){
 						send_err_resp_header(INVALID_END_OF_REQ);
@@ -339,8 +339,8 @@ void execute_echo(unsigned int packet_len){
 //-------------------------------------------------------------
 void decrypt_request_body(int n) {
 	
-	int req_body = n - 22;
-	unsigned char *req_ptr = &udp_buffer[22];
+	int req_body = n - REQ_HEAD_MIN_LEN;
+	unsigned char *req_ptr = &udp_buffer[REQ_HEAD_MIN_LEN];
 	unsigned char *key = &encrypt_key[0];
 	unsigned char *iv = &nounce[0];
 
