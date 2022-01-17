@@ -166,6 +166,7 @@
 //----------Command codes-----------------------------------------
 #define CMD_COIN_CONVERTER 					215
 #define CMD_ECHO							4
+#define CMD_VERSION                         15
 
 #define STATE_WAIT_START						1
 #define STATE_START_RECVD					2

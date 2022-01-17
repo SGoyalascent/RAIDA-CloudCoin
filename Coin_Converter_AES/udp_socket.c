@@ -136,6 +136,7 @@ void process_request(unsigned int packet_len){
 	
 		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
 		case CMD_ECHO:						execute_echo(packet_len);break;
+		case CMD_VERSION:     				execute_version(packet_len); break;
 		default:							send_err_resp_header(INVALID_CMD);	
 	}
 }
@@ -333,6 +334,30 @@ void execute_echo(unsigned int packet_len){
 	printf("ECHO Command \n");
 	size    =  RES_HS+HS_BYTES_CNT;
 	send_response(SUCCESS,size);
+}
+//------------------------------------------------------------------
+//VERSION COMMAND 
+//-----------------------------------------------------------------
+void execute_version(unsigned int packet_len){
+	FILE *fp_inp = NULL;
+	char path[256];
+	unsigned int index;
+	char c;
+	strcpy(path,execpath);
+	strcat(path,"/Data/version.txt");
+	printf("VERSION Command \n");
+	if ((fp_inp = fopen((const char *)path, "r")) == NULL) {
+		printf("version.txt cannot be opened , exiting \n");
+		send_err_resp_header(FAIL);
+		return ;
+	}
+	index = RES_HS+HS_BYTES_CNT;
+	while ((c = fgetc(fp_inp)) != EOF){
+		response[index] = c;
+		index++;
+    }
+	fclose(fp_inp);
+	send_response(SUCCESS,index);
 }
 //-------------------------------------------------------------
 //DECRYPT REQUEST BODY
