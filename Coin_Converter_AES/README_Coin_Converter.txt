@@ -7,7 +7,7 @@
                                        (iii.) listenport:- port on which the Database is listening
                                        (iv.) Username, Password:- Password and Username of the Database
 
-4. In the "Data" directory, update the raida_no.txt file. Change the raida no. according to the Raida deployed
+4. In the "Data" directory, update the raida_no.txt file. Change the raida no. according to the Raida deployed. Example:- if Legacy_Raida-2, write 02; if Legacy_Raida-15, write 15
 
 5. Compile the program to confirm if MySQL client is working.  Command:-   gcc raida_server.c udp_socket.c aes.c -o coin_converter `mysql_config --cflags --libs`
 
@@ -37,7 +37,7 @@ You need to add the ticket starting with most-significant-byte or basically in r
 2. Edit the ip_address in the expression. (line 314)  
 	servaddr.sin_addr.s_addr = inet_addr("139.99.155.124");   //Replace "139.99.155.124" with the ip_address of the Legacy raida you are running the coin_converter program on.
 
-3. Test it by compiling the udp_client.c file. Command to compile:-   gcc udp_client.c -o client         
+3. Test it by compiling the udp_client.c file. Command to compile:-   gcc udp_client.c aes.c -o client         
 					       Command to run the executable:-   ./client	
 
 

@@ -191,13 +191,13 @@ unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,
 
 		set_time_out(FRAME_TIME_OUT_SECS);
         if (select(32, &select_fds, NULL, NULL, &timeout) == 0 ){
-            //printf("Time out error \n"); 
-            printf("STATUS: FAIL\n");
-            continue;    
+            printf("Time out error \n"); 
+            //printf("STATUS: FAIL\n");
+            exit(EXIT_FAILURE);    
         }
 		else {
             n = recvfrom(sockfd, (char *)recv_buffer, MAXLINE, MSG_WAITALL, (struct sockaddr *) &servaddr, &len);
-            printf("STATUS: SUCCESS\n");
+            //printf("STATUS: SUCCESS\n");
         }
 		/*
 	    n = recvfrom(sockfd, (char *)recv_buffer, MAXLINE, 
