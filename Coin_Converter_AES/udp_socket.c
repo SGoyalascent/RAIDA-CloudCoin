@@ -163,10 +163,11 @@ int load_encrypt_key(){
 		return 1;
 	}
 	memcpy(encrypt_key,buff,ENCRYPTION_CONFIG_BYTES);
+	/*
 	for(i=0;i<ENCRYPTION_CONFIG_BYTES;i++){
 	 	printf("%02x ",encrypt_key[i]);
 	}
-	printf("\n");
+	printf("\n"); */
 	fclose(fp_inp);
 	
 	memset(nounce,0,NOUNCE_BYTES_CNT);
@@ -418,11 +419,16 @@ void execute_coin_converter(unsigned int packet_len) {
 
 	char Host_ip[256], Database_name[256], Username[256], User_password[256], Encryption_key[256], Mode[256];
 	int listen_port, serial_no_cnt;
+	char path[500];
 
     printf("Welcome to MySql Database\n");
-    FILE *myfile = fopen("Coin_Converter.config", "r");
+	strcpy(path,execpath);
+	strcat(path,"/Coin_Converter.config");
+    FILE *myfile = fopen(path, "r");
     if(myfile == NULL) {
         printf("Config file not found\n");
+		status_code = FAIL;
+		send_response(status_code,size);
 		return;
     }
     fscanf(myfile, "Host = %255s Database = %255s Username = %255s Password = %255s listenport = %d encryption_key = %255s mode = %255s Serial_no_count = %d", Host_ip, Database_name,
@@ -508,7 +514,7 @@ void execute_coin_converter(unsigned int packet_len) {
 			printf(" res[%d]: %d", index+(3*i)+j, response[index+(3*i)+j]);
 		} 
 		printf("\n");
-	
+
 		sprintf(query2, "DELETE FROM fixit_log WHERE sn = '%u'", sn_no.val);
 		if(mysql_query(con, query2)) {
 			printf("Failed to Delete record successfully\n");
@@ -516,6 +522,7 @@ void execute_coin_converter(unsigned int packet_len) {
 			mysql_close(con);
 			return;
 		}
+		printf("Serial no. Deleted from the Database\n");
 
 		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%u' AND NN = 1", sn_no.val);
 		if(mysql_query(con, query3)) {
@@ -524,6 +531,7 @@ void execute_coin_converter(unsigned int packet_len) {
 			mysql_close(con);
 			return;
 		}
+		printf(" Database Updated\n");
 	}
 
 	mysql_free_result(result);

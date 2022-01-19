@@ -88,8 +88,6 @@ int load_encrypt_key(){
 int main() {
     int i=0;
     unsigned char buffer[MAXLINE], recv_buffer[MAXLINE];	
-    unsigned char buffer_version[MAXLINE]={0,0,2,0,0,15,2,0,0,0,0,0,22,22,0,1,1,0,0,0,0,0,0x3E,0x3E};
-    unsigned char buffer_echo[MAXLINE]={0,0,2,0,0,4,2,0,0,0,0,0,22,22,0,1,1,0,0,0,0,0,0x3E,0x3E};
 	unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
 										74,39,187,57,149,157,85,138,101,136,77,66,105,128,26,97,225,193,113,149,62,33,
 										0x3E, 0x3E};
@@ -102,9 +100,7 @@ int main() {
 	    
 		struct sockaddr_in     servaddr;
 			
-	//   memcpy(buffer,buffer_version,MAXLINE);			
-		memcpy(buffer,buffer_echo,MAXLINE);	
-	//	memcpy(buffer, buffer_upgrade_coin, MAXLINE);
+		memcpy(buffer, buffer_upgrade_coin, MAXLINE);
 
 	    // Creating socket file descriptor
 	    if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
