@@ -88,34 +88,20 @@ int load_encrypt_key(){
 int main() {
     int i=0;
     unsigned char buffer[MAXLINE], recv_buffer[MAXLINE];	
-    unsigned char buffer_version[MAXLINE]={0,0,25,0,0,15,2,0,0,0,0,0,22,22,0,1,1,0,0,0,0,0,0x3E,0x3E};
+    unsigned char buffer_version[MAXLINE]={0,0,2,0,0,15,2,0,0,0,0,0,22,22,0,1,1,0,0,0,0,0,0x3E,0x3E};
     unsigned char buffer_echo[MAXLINE]={0,0,2,0,0,4,2,0,0,0,0,0,22,22,0,1,1,0,0,0,0,0,0x3E,0x3E};
-  
+	unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
+										74,39,187,57,149,157,85,138,101,136,77,66,105,128,26,97,225,193,113,149,62,33,
+										0x3E, 0x3E};
 /*
  unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
 										0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 										0x3E,0x3E};
 */
-unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
-										245,203,185,30,21,126,219,54,115,46,238,42,155,50,130,149,59,125,160,101,113,04,
-										0x3E, 0x3E};
 
-
-//04 71  65  a0  7d  3b 95  82  32 9b  2a ee  2e 73  36 db  7e  15 1e b9  cb  f5
-//04 113 101 160 125 59 149 130 50 155 42 238 46 115 54 219 126 21 30 185 203 245
-
-	    struct sockaddr_in     servaddr;
-	    /*char md5[64],result[64];	
-	  
-		FILE *fp;
-		int status;
-		char path[64];
-                fp = popen("echo abcd |md5sum", "r");
-		while (fgets(path,64, fp) != NULL)
-		    printf("%s", path);
-	    return 0;	*/
+	    
+		struct sockaddr_in     servaddr;
 			
-
 	//   memcpy(buffer,buffer_version,MAXLINE);			
 	//	memcpy(buffer,buffer_echo,MAXLINE);	
 		memcpy(buffer, buffer_upgrade_coin, MAXLINE);
@@ -180,15 +166,11 @@ unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,
 		printf("%d  ", buffer[i]);
 	}
 	printf("\n");
- //0  0  2  0  0  215  0  0  0  0  0  0  22  22  0  1  0  0  0  0  0  0  155  102  254  83  80  231  201  183  32  120  98  215  94  
- //191  245  131  8  109  218  225  241  98  110  170  211  218  76  197  125  183  205  59  230  146  40  106  203  48  67  29
-
-
 
 	    sendto(sockfd, (const char *)buffer, len,
 	        MSG_CONFIRM, (const struct sockaddr *) &servaddr, 
 	            sizeof(servaddr));
-
+/*
 		set_time_out(FRAME_TIME_OUT_SECS);
         if (select(32, &select_fds, NULL, NULL, &timeout) == 0 ){
             printf("Time out error \n"); 
@@ -198,11 +180,12 @@ unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,
 		else {
             n = recvfrom(sockfd, (char *)recv_buffer, MAXLINE, MSG_WAITALL, (struct sockaddr *) &servaddr, &len);
             //printf("STATUS: SUCCESS\n");
-        }
-		/*
+        } */
+
+		
 	    n = recvfrom(sockfd, (char *)recv_buffer, MAXLINE, 
 	                MSG_WAITALL, (struct sockaddr *) &servaddr,
-	                &len); */
+	                &len); 
 
 		printf("n: %d\n", n);
 	   for(i=0;i<n;i++){	

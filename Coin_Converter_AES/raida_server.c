@@ -32,13 +32,13 @@ int load_raida_no(){
 		return 1;
 	}
 	if(size >= 2){
-		server_config_obj.raida_id = (buff[0]-48)*10;
-		server_config_obj.raida_id+= (buff[1]-48);
+		server_config_obj.raida_id = (buff[0]-48)*10;   
+		server_config_obj.raida_id+= (buff[1]-48);  
 	}else{
 		server_config_obj.raida_id=buff[0]-48;
 	}
 
-	printf("Raida Id  :-%d \n", server_config_obj.raida_id);
+	printf("Raida Id :- %d \n", server_config_obj.raida_id);
 	fclose(fp_inp);
 	return 0;
 }
