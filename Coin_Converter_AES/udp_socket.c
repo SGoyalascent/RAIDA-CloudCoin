@@ -491,7 +491,6 @@ void execute_coin_converter(unsigned int packet_len) {
 		printf("Status_code: NO_TICKET_FOUND\n");
 		send_response(status_code,size);
 		return;
-
 	}
 	/*
 	if(sr_nos_size > 300) {
@@ -522,7 +521,7 @@ void execute_coin_converter(unsigned int packet_len) {
 			mysql_close(con);
 			return;
 		}
-		printf("Serial no. Deleted from the Database\n");
+		printf("Record Deleted from the Database\n");
 
 		sprintf(query3, "UPDATE ans SET NN = 2 WHERE SN = '%u' AND NN = 1", sn_no.val);
 		if(mysql_query(con, query3)) {
@@ -531,7 +530,7 @@ void execute_coin_converter(unsigned int packet_len) {
 			mysql_close(con);
 			return;
 		}
-		printf(" Database Updated\n");
+		printf(" Record Updated in the Database\n");
 	}
 
 	mysql_free_result(result);

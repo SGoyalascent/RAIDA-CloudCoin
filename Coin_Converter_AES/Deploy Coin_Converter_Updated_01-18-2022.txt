@@ -1,0 +1,190 @@
+#Step by step to deploy Coin Converter to All Legacy RAIDA#
+
+1. first, make sure to upload Coin_Converter_AES.zip file attached to your server /tmp directory then follow below command.
+cd /tmp;
+unzip Coin_Converter_AES.zip;
+#if unzip not working, pls. run sudo apt install unzip then run unzip command again
+cp -r /tmp/Coin_Converter_AES /opt;
+cd /opt/Coin_Converter_AES;
+chmod 0755 coin_converter;
+
+2. Open port 18000 from your external firewall or iptables using below command
+iptables -A INPUT -p udp -m udp --dport 18000 -m comment --comment "Coin_Converter" -j ACCEPT;
+iptables-save;
+
+#Note: Please check if the new rules is added to your iptables using below command.
+nano /etc/iptables/rules.v4
+
+#See below example of iptables with port 18000 included
+# Completed on Fri Mar 12 07:57:16 2021
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [983:309046]
+-A INPUT -i lo -j ACCEPT
+-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp --dport 443 -m set --match-set guardian-allowed src -j ACCEPT
+-A INPUT -p udp --dport 29999 -m set --match-set guardian-allowed src -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -m comment --comment "allow SSH to this host" -j ACCEPT
+-A INPUT -p udp -m udp --dport 18000 -m comment --comment "Coin_Converter" -j ACCEPT
+-A INPUT -j DROP
+COMMIT
+
+
+#You should have below rules in your iptables. if you don't see it, just add it manually. 
+-A INPUT -p udp -m udp --dport 18000 -m comment --comment "Coin_Converter" -j ACCEPT;
+
+#Then Save and Restart your iptables using below command.
+iptables-save
+systemctl restart netfilter-persistent
+
+
+3. Install MYSQL client library if you don't have it yet:    
+sudo apt install default-libmysqlclient-dev;
+
+4. Update Coin_Converter.config file: 
+#(i.) Database = name of the database in which tables "fixit_log" and "ans" are located (Both tables should be located in the same Database). 
+#(ii.) Host:- host ip address of the Database(generally ip is 127.0.0.1 but better confirm it once)
+#(iii.) listenport:- port on which the Database is listening
+#(iv.) Username, Password:- Password and Username of the Database
+
+# Run below command
+nano /opt/Coin_Converter_AES/Coin_Converter.config;
+
+#See below example of Coin_Converter.config file. The DB information can be found in your /opt/raida/raida_node.cfg
+
+Host = 127.0.0.1
+Database = raida
+Username = raida
+Password = cc_2019-05
+listenport = 3306
+encryption_key = 07068702005447fe9105bb2892ee9965
+mode = production
+Serial_no_count = 330
+
+
+5. In the "Data" directory, update the raida_no.txt file. Change the raida no. according to your Raida number. 
+nano /opt/Coin_Converter_AES/Data/raida_no.txt;
+#Example:- if Legacy_Raida-0, write 00, if Legacy_Raida-2, write 02; if Legacy_Raida-15, write 15
+
+
+6. Compile the program to confirm if MySQL client is working. 
+cd /opt/Coin_Converter_AES;
+gcc raida_server.c udp_socket.c aes.c -o coin_converter `mysql_config --cflags --libs`;
+#Note:- (``) does not represent inverted comma('') in  `mysql_config --cflags --libs`
+
+
+7. Setup automatic service by running below command
+nano /lib/systemd/system/raida-converter.service
+
+#Then paste this script and save.
+
+#Start of script
+[Unit]
+Description=RAIDA Converter
+
+[Service]
+ExecStart=/opt/Coin_Converter_AES/coin_converter
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+#End of script
+
+
+8. Start Coin Converter Service
+sudo systemctl daemon-reload;
+systemctl enable raida-converter.service;
+systemctl start raida-converter.service;
+
+#Then check if your coin converter is running using below command.
+systemctl status raida-converter.service;
+
+#You should see below result
+root@:~# systemctl status raida-converter.service
+● raida-converter.service - RAIDA Converter
+     Loaded: loaded (/lib/systemd/system/raida-converter.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2022-01-18 14:46:32 UTC; 15h ago
+   Main PID: 2606879 (coin_converter)
+      Tasks: 1 (limit: 9285)
+     Memory: 988.0K
+     CGroup: /system.slice/raida-converter.service
+             └─2606879 /opt/Coin_Converter_AES/coin_converter
+
+
+9. Check process if running 
+netstat -napu | grep 18000
+
+
+Please let me know once done.
+
+Coin Converter online tester
+https://cloudcoin.digital/conv/show.php
+
+root@instance-3:~# nc -z -v -u 116.203.157.233 18000
+Connection to 152.67.15.219 18000 port [udp/*] succeeded!
+root@instance-3:~# nc -z -v -u localhost 18000
+Connection to localhost 18000 port [udp/*] succeeded!
+root@instance-3:~#
+
+default-libmysqlclient-dev
+
+
+
+
+ 904  cd /tmp;
+  905  ls -l
+  906  unzip Coin_Converter_AES.zip
+  907  sudo apt install unzip
+  908  unzip Coin_Converter_AES.zip;
+  909  cp -r /tmp/Coin_Converter_AES /opt;
+  910  cd /opt/Coin_Converter_AES;
+  911  chmod 0755 coin_converter;
+  912  iptables -A INPUT -p udp -m udp --dport 18000 -m comment --comment "Coin_Converter" -j ACCEPT;
+  913  iptables-save;
+  914  sudo apt install default-libmysqlclient-dev;
+  915  nano /opt/Coin_Converter_AES/Coin_Converter.config;
+  916  nano /etc/mysql/my.cnf
+  917  cd /etc/mysql/conf.d/
+  918  ls -l
+  919  nano mysql.cnf
+  920  cd /opt/Coin_Converter_AES/
+  921  ls -l
+  922  nano Coin_Converter.config
+  923  cd /etc/mysql
+  924  ls -l
+  925  cd conf.d/
+  926  ls -l
+  927  cd /etc/nginx/
+  928  ls -l
+  929  cd conf.d/
+  930  ls -l
+  931  nano raida.conf
+  932  cd /etc/mysql
+  933  ls -l
+  934  cd /opt/raida
+  935  ls -l
+  936  nano raida_node.cfg
+  937  cd /opt/Coin_Converter_AES/
+  938  ls -l
+  939  nano Coin_Converter.config
+  940  nano /opt/Coin_Converter_AES/Data/raida_no.txt;
+  941  cd /opt/Coin_Converter_AES;
+  942  gcc raida_server.c udp_socket.c aes.c -o coin_converter `mysql_config --cflags --libs`;
+  943  nano /lib/systemd/system/raida-converter.service
+  944  sudo systemctl daemon-reload;
+  945  systemctl enable raida-converter.service
+  946  systemctl restart raida-converter.service
+  947  systemctl status raida-converter.service
+  948  netstat -napu | grep 18000
+
+R18
+root@mainpc:~# lsb_release -a
+No LSB modules are available.
+Distributor ID: Ubuntu
+Description:    Ubuntu 18.04.4 LTS
+Release:        18.04
+Codename:       bionic
+
