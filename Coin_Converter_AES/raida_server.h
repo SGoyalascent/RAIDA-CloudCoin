@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <syslog.h>
 
 //--------------------------------------------
 #define RAIDA_SERVER_MAX 					25

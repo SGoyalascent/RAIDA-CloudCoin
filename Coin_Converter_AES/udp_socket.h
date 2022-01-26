@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <mysql.h>
+#include <syslog.h>
 #include "raida_server.h"
 #include "aes.h"
 

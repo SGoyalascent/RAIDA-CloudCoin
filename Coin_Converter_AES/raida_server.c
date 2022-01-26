@@ -122,6 +122,11 @@ void getexepath()
 //---------------------------------------------------------
 int main() {
 	uint32_t packet_size,i=0;	
+
+	setlogmask(LOG_UPTO(LOG_DEBUG));
+	openlog("Converter", LOG_CONS | LOG_NDELAY | LOG_PERROR | LOG_PID, LOG_USER | LOG_SYSLOG | LOG_KERN);
+	syslog(LOG_DEBUG, "START LOGGING...");
+
 	welcomeMsg();
 	//init_en_codes();
 	getexepath();
@@ -135,5 +140,7 @@ int main() {
 			process_request(packet_size);
 		}
 	}
+
+	closelog();
 	return 0;
 }
