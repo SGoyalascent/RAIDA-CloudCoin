@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <syslog.h>
+#include <errno.h>
 
 //--------------------------------------------
 #define RAIDA_SERVER_MAX 					25
@@ -34,7 +34,9 @@ void welcomeMsg();
 int load_raida_no();
 int load_server_config();
 long get_time_cs();
+int open_logsfile();
 extern char execpath[256];
 extern struct server_config server_config_obj;
 extern union bytes binary;
+extern FILE *fd_log;
 #endif

@@ -2,11 +2,13 @@
 char execpath[256];
 struct server_config server_config_obj;
 union bytes binary;
+FILE *fd_log;
 //----------------------------------------------------------
 //Welcome message
 //----------------------------------------------------------
 void welcomeMsg() {
 	printf("\nWelcome to Raida Server\n");
+	fprintf(fd_log, "\nWelcome to Raida Server\n");
 }
 //----------------------------------------------------------
 //Loads raida no from raida_no.txt
@@ -19,6 +21,7 @@ int load_raida_no(){
 	strcpy(path,execpath);
 	strcat(path,"/Data/raida_no.txt");
 	if ((fp_inp = fopen(path, "r")) == NULL) {
+		fprintf(fd_log, "raida.txt file cannot be read. %s\n", strerror(errno));
 		printf("raida_no.txt Cannot be opened , exiting \n");
 		return 1;
 	}
@@ -28,6 +31,7 @@ int load_raida_no(){
 	fclose(fp_inp);
 	fp_inp = fopen(path, "r");
 	if(fread(buff, 1, size, fp_inp)<size){
+		fprintf(fd_log, "Configuration parameters missing in raida_no.txt. %s\n", strerror(errno));
 		printf("Configuration parameters missing in raida_no.txt \n");
 		return 1;
 	}
@@ -39,6 +43,7 @@ int load_raida_no(){
 	}
 
 	printf("Raida Id :- %d \n", server_config_obj.raida_id);
+	fprintf(fd_log, "RAIDA_NO.: %d\n", server_config_obj.raida_id);
 	fclose(fp_inp);
 	return 0;
 }
@@ -53,10 +58,12 @@ int load_server_config() {
 	strcpy(path,execpath);
 	strcat(path,"/Data/server.bin");
 	if ((fp_inp = fopen(path, "rb")) == NULL) {
+		fprintf(fd_log, "server.bin Cannot be opened. %s\n", strerror(errno));
 		printf("server.bin Cannot be opened , exiting \n");
 		return 1;
 	}
 	if(fread(buff, 1, SERVER_CONFIG_BYTES, fp_inp)<SERVER_CONFIG_BYTES){
+		fprintf(fd_log, "Configuration parameters missing in server.bin. %s\n", strerror(errno));
 		printf("Configuration parameters missing in server.bin \n");
 		return 1;
 	}
@@ -82,6 +89,7 @@ int load_server_config() {
 	printf("------------------------------\n");
 	printf("Port Number :- %d \n", server_config_obj.port_number);
 	printf("Bytes per UDP Request body :- %d \n",server_config_obj.bytes_per_frame);
+	fprintf(fd_log, "Port Number: %d  Bytes per UDP Request body: %d\n", server_config_obj.port_number, server_config_obj.bytes_per_frame);
 	fclose(fp_inp);
 	return 0;
 }
@@ -116,23 +124,36 @@ void getexepath()
   }	
   strncpy(execpath,buff,slash_pos);
 }
+//--------------------------------------------------------
+//LOG ERROR FILE  converter_logs.txt
+//--------------------------------------------------------
+int open_logsfile() {
 
+	fd_log = NULL;
+	char path[256];
+	strcpy(path,execpath);
+	strcat(path,"/Data/converter_logs.txt");
+	if ((fd_log = fopen(path, "a")) == NULL) {
+		printf("Logs file cannot be opened.\n");
+		perror("Error: ");
+		return 0;
+	}
+
+	return 1;
+}
 //----------------------------------------------------------
 // main function
 //---------------------------------------------------------
 int main() {
 	uint32_t packet_size,i=0;	
-
-	setlogmask(LOG_UPTO(LOG_DEBUG));
-	openlog("Converter", LOG_CONS | LOG_NDELAY | LOG_PERROR | LOG_PID, LOG_USER | LOG_SYSLOG | LOG_KERN);
-	syslog(LOG_DEBUG, "START LOGGING...");
-
+	open_logsfile();
 	welcomeMsg();
-	//init_en_codes();
 	getexepath();
 	if(load_raida_no() || load_server_config()){
 		exit(0);
 	}
+
+	//fprintf(fd_log, "%s\n", strerror(errno));
 	srand(time(NULL));
 	init_udp_socket();
 	while(1) {
@@ -140,7 +161,5 @@ int main() {
 			process_request(packet_size);
 		}
 	}
-
-	closelog();
 	return 0;
 }
