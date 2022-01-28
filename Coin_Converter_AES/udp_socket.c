@@ -63,7 +63,6 @@ int listen_request(){
 			case STATE_WAIT_START:
 				open_logsfile();
 				printf("---------------------WAITING FOR REQ HEADER ----------------------\n");
-				fprintf(fd_log, "-----------WAITING FOR REQ HEADER -----------\n");
 				index=0;
 				curr_frame_no=0;
 				client_s_addr = 0;	
@@ -71,7 +70,6 @@ int listen_request(){
 				n = recvfrom(sockfd, (unsigned char *)buffer, server_config_obj.bytes_per_frame,MSG_WAITALL, ( struct sockaddr *) &cliaddr,&len);
 				printf("n: %d\n", n);
 				curr_frame_no=1;
-				fprintf(fd_log, "RECVD FRAME NO.: %d\n", curr_frame_no);
 				printf("--------RECVD  FRAME NO ------ %d\n", curr_frame_no);
 				state = STATE_START_RECVD;	
 			break;		
@@ -79,11 +77,9 @@ int listen_request(){
 				printf("---------------------REQ HEADER RECEIVED ----------------------------\n");
 				status_code=validate_request_header(buffer,n);
 				if(status_code!=NO_ERR_CODE){
-					send_err_resp_header(status_code);
-					fprintf(fd_log, "STATUS: SENT ERROR RESPONSE         STATUS_CODE: %d    ERROR: \n",status_code);			
+					send_err_resp_header(status_code);			
 					state = STATE_WAIT_START;
 				}else{
-					fprintf(fd_log, "-----REQUEST HEADER VALIDATED-----\n");
 					frames_expected = buffer[REQ_FC+1];
 					frames_expected|=(((uint16_t)buffer[REQ_FC])<<8);
 					memcpy(udp_buffer,buffer,n);
@@ -100,8 +96,9 @@ int listen_request(){
 				set_time_out(FRAME_TIME_OUT_SECS);
 				if (select(32, &select_fds, NULL, NULL, &timeout) == 0 ){
 					send_err_resp_header(FRAME_TIME_OUT);
-					fprintf(fd_log, "STATUS: SENT ERROR RESPONSE         STATUS_CODE: 17    ERROR: FRAME TIMEOUT     STATUS: ALL FRAMES NOT RECEIVED \n");
+					fprintf(fd_log, "STATUS: SENT ERROR RESPONSE    STATUS_CODE: 17    ERROR: FRAME TIMEOUT     STATUS: ALL FRAMES NOT RECEIVED \n");
 					state = STATE_WAIT_START;
+					fclose(fd_log);
 					printf("Time out error \n");
 				}else{
 					n = recvfrom(sockfd, (unsigned char *)buffer, server_config_obj.bytes_per_frame,MSG_WAITALL, ( struct sockaddr *) &cliaddr,&len);
@@ -109,7 +106,6 @@ int listen_request(){
 						memcpy(&udp_buffer[index],buffer,n);
 						index+=n;
 						curr_frame_no++;
-						fprintf(fd_log, "RECVD FRAME NO.: %d\n", curr_frame_no);
 						printf("--------RECVD  FRAME NO ------ %d\n", curr_frame_no);
 						if(curr_frame_no==frames_expected){
 							state = STATE_END_RECVD;
@@ -129,6 +125,7 @@ int listen_request(){
 						process_request(index);
 					}
 					state = STATE_WAIT_START;
+					fclose(fd_log);
 			break;
 		}
 	}
@@ -146,12 +143,12 @@ void process_request(unsigned int packet_len){
 	coin_id |= (((uint16_t)udp_buffer[REQ_CI])<<8);
 	switch(cmd_no){
 	
-		case CMD_COIN_CONVERTER : 			fprintf(fd_log, "STATUS_CODE: 215   STATUS: COIN_CONVERTER_COMMAND\n");execute_coin_converter(packet_len);break;
-		case CMD_ECHO:						fprintf(fd_log, "STATUS_CODE: 4   STATUS: ECHO_COMMAND\n");execute_echo(packet_len);break;
-		case CMD_VERSION:     				fprintf(fd_log, "STATUS_CODE: 15   STATUS: VERSION_COMMAND\n");execute_version(packet_len); break;
+		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);break;
+		case CMD_ECHO:						execute_echo(packet_len);break;
+		case CMD_VERSION:     				execute_version(packet_len); break;
 		default:							send_err_resp_header(INVALID_CMD);fprintf(fd_log, "STATUS: SENT ERROR RESPONSE        STATUS_CODE: 24   ERROR: INVALID_COMMAND    STATUS: INVALID COMMAND RECEIVED \n");
 	}
-	fclose(fd_log);
+	
 }
 
 //----------------------------------------------------------
@@ -269,34 +266,34 @@ unsigned char validate_request_header(unsigned char * buff,int packet_size){
 	printf("---------------Validate Req Header-----------------\n");
 	
 	if(buff[REQ_EN]!=0 && buff[REQ_EN]!=1){
-		fprintf(fd_log, "STATUS_CODE: 27    ERROR: INVALID_EN_CODE\n");
+		fprintf(fd_log, "STATUS: SEND ERROR RESPONSE    STATUS_CODE: 27    ERROR: INVALID_EN_CODE\n");
 		return INVALID_EN_CODE;
 	}
 	request_header_exp_len = REQ_HEAD_MIN_LEN;
 	if(packet_size< request_header_exp_len){
-		fprintf(fd_log, "STATUS_CODE: 16    ERROR: INVALID_PACKET_LENGTH\n");
+		fprintf(fd_log, "STATUS: SEND ERROR RESPONSE   STATUS_CODE: 16    ERROR: INVALID_PACKET_LENGTH\n");
 		printf("Invalid request header  \n");
 		return INVALID_PACKET_LEN;
 	}
 	frames_expected = buff[REQ_FC+1];
 	frames_expected|=(((uint16_t)buff[REQ_FC])<<8);
 	if(frames_expected <=0  || frames_expected > FRAMES_MAX){
-		fprintf(fd_log, "STATUS_CODE: 15    ERROR: INVALID_FRAME_COUNT\n");
+		fprintf(fd_log, "STATUS: SEND ERROR RESPONSE    STATUS_CODE: 15    ERROR: INVALID_FRAME_COUNT\n");
 		printf("Invalid frame count  \n");
 		return INVALID_FRAME_CNT;
 	}	
 	if(buff[REQ_CL]!=0){
-		fprintf(fd_log, "STATUS_CODE: 1    ERROR: INVALID_CLOUD_ID\n");
+		fprintf(fd_log, "STATUS: SEND ERROR RESPONSE    STATUS_CODE: 1    ERROR: INVALID_CLOUD_ID\n");
 		printf("Invalid cloud id \n");
 		return INVALID_CLOUD_ID;
 	}
 	if(buff[REQ_SP]!=0){
-		fprintf(fd_log, "STATUS_CODE: 19    ERROR: INVALID_SPLIT_ID\n");
+		fprintf(fd_log, "STATUS: SEND ERROR RESPONSE   STATUS_CODE: 19    ERROR: INVALID_SPLIT_ID\n");
 		printf("Invalid split id \n");
 		return INVALID_SPLIT_ID;
 	}
 	if(buff[REQ_RI]!=server_config_obj.raida_id){
-		fprintf(fd_log, "STATUS_CODE: 18    ERROR: WRONG_RAIDA_NO\n");
+		fprintf(fd_log, "STATUS: SEND ERROR RESPONSE   STATUS_CODE: 18    ERROR: WRONG_RAIDA_NO\n");
 		printf("Invalid Raida id \n");
 		return WRONG_RAIDA;
 	}
@@ -360,7 +357,6 @@ void execute_echo(unsigned int packet_len){
 	printf("ECHO Command \n");
 	size    =  RES_HS+HS_BYTES_CNT;
 	send_response(SUCCESS,size);
-	fprintf(fd_log, "STATUS: SEND ECHO RESPONSE    STATUS_CODE: 250     STATUS: SUCCESS\n");
 }
 //------------------------------------------------------------------
 //VERSION COMMAND 
@@ -387,7 +383,6 @@ void execute_version(unsigned int packet_len){
     }
 	fclose(fp_inp);
 	send_response(SUCCESS,index);
-	fprintf(fd_log, "STATUS: SEND VERSION RESPONSE    STATUS_CODE: 250     STATUS: SUCCESS\n");
 }
 //-------------------------------------------------------------
 //DECRYPT REQUEST BODY
@@ -454,7 +449,6 @@ void execute_coin_converter(unsigned int packet_len) {
 	char path[500];
 
     printf("Welcome to MySql Database\n");
-	fprintf(fd_log, "WELCOME TO THE MYSQL DATABASE\n");
 	strcpy(path,execpath);
 	strcat(path,"/Data/Coin_Converter.config");
     FILE *myfile = fopen(path, "r");
