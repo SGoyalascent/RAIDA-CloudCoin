@@ -138,7 +138,6 @@ int open_logsfile() {
 		perror("Error: ");
 		return 0;
 	}
-
 	return 1;
 }
 //----------------------------------------------------------
@@ -146,20 +145,22 @@ int open_logsfile() {
 //---------------------------------------------------------
 int main() {
 	uint32_t packet_size,i=0;	
+	getexepath();
 	open_logsfile();
 	welcomeMsg();
-	getexepath();
+	
 	if(load_raida_no() || load_server_config()){
 		exit(0);
 	}
-
-	//fprintf(fd_log, "%s\n", strerror(errno));
 	srand(time(NULL));
 	init_udp_socket();
+	fclose(fd_log);
 	while(1) {
 		if ((packet_size=listen_request())>0){
 			process_request(packet_size);
 		}
 	}
+
+	
 	return 0;
 }

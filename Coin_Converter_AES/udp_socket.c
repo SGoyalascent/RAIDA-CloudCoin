@@ -12,6 +12,7 @@ unsigned char udp_buffer[UDP_BUFF_SIZE],response[RESPONSE_HEADER_MAX],coin_table
 unsigned char free_thread_running_flg;
 uint8_t encrypt_key[ENCRYPTION_CONFIG_BYTES];
 uint8_t nounce[NOUNCE_BYTES_CNT];
+FILE *fd_log;
 //-----------------------------------------------------------
 //Set time out for UDP frames
 //-----------------------------------------------------------
@@ -60,6 +61,7 @@ int listen_request(){
 		//printf("state: %d", state);
 		switch(state){
 			case STATE_WAIT_START:
+				open_logsfile();
 				printf("---------------------WAITING FOR REQ HEADER ----------------------\n");
 				fprintf(fd_log, "-----------WAITING FOR REQ HEADER -----------\n");
 				index=0;
@@ -144,11 +146,12 @@ void process_request(unsigned int packet_len){
 	coin_id |= (((uint16_t)udp_buffer[REQ_CI])<<8);
 	switch(cmd_no){
 	
-		case CMD_COIN_CONVERTER : 			execute_coin_converter(packet_len);fprintf(fd_log, "STATUS_CODE: 215   STATUS: COIN_CONVERTER_COMMAND\n");break;
-		case CMD_ECHO:						execute_echo(packet_len);fprintf(fd_log, "STATUS_CODE: 4   STATUS: ECHO_COMMAND\n");break;
-		case CMD_VERSION:     				execute_version(packet_len); fprintf(fd_log, "STATUS_CODE: 15   STATUS: VERSION_COMMAND\n");break;
-		default:							send_err_resp_header(INVALID_CMD);	fprintf(fd_log, "STATUS: SENT ERROR RESPONSE           STATUS_CODE: 24   ERROR: INVALID_COMMAND    STATUS: INVALID COMMAND RECEIVED \n");
+		case CMD_COIN_CONVERTER : 			fprintf(fd_log, "STATUS_CODE: 215   STATUS: COIN_CONVERTER_COMMAND\n");execute_coin_converter(packet_len);break;
+		case CMD_ECHO:						fprintf(fd_log, "STATUS_CODE: 4   STATUS: ECHO_COMMAND\n");execute_echo(packet_len);break;
+		case CMD_VERSION:     				fprintf(fd_log, "STATUS_CODE: 15   STATUS: VERSION_COMMAND\n");execute_version(packet_len); break;
+		default:							send_err_resp_header(INVALID_CMD);fprintf(fd_log, "STATUS: SENT ERROR RESPONSE        STATUS_CODE: 24   ERROR: INVALID_COMMAND    STATUS: INVALID COMMAND RECEIVED \n");
 	}
+	fclose(fd_log);
 }
 
 //----------------------------------------------------------
