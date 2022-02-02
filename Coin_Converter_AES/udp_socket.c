@@ -382,6 +382,12 @@ void execute_version(unsigned int packet_len){
 		index++;
     }
 	fclose(fp_inp);
+
+	unsigned int response_body_size = index - (RES_HS + HS_BYTES_CNT);
+	unsigned char *key = &encrypt_key[0];
+	unsigned char *iv = &nounce[0];
+	unsigned char *resp_ptr = &response[RES_HS+HS_BYTES_CNT];
+	crypt_ctr(key,resp_ptr,response_body_size,iv);
 	send_response(SUCCESS,index);
 }
 //-------------------------------------------------------------

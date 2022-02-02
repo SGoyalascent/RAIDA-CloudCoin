@@ -155,12 +155,11 @@ int main() {
 	srand(time(NULL));
 	init_udp_socket();
 	fclose(fd_log);
+
 	while(1) {
 		if ((packet_size=listen_request())>0){
 			process_request(packet_size);
 		}
-	}
-
-	
+	} 
 	return 0;
 }
