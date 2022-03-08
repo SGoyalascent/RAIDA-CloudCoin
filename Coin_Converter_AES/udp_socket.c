@@ -433,16 +433,16 @@ void execute_coin_converter(unsigned int packet_len) {
 
 	index = req_header_min + CH_BYTES_CNT;
 	printf("req_header_min: %d  index: %u\n", req_header_min, index);
-	printf("buffer:  ");
+	printf("ticket_buffer:  ");
 	for(int j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
-		ticket_buffer[j] = udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]; 
+		ticket_buffer[j] = udp_buffer[index+j]; 
 		printf("%d  ", ticket_buffer[j]);
 	} 
 	printf("\n");
 	unsigned char ticket_hex_bytes[45];
 	char* ptr =  &ticket_hex_bytes[0];
 	for(int j=0;j<LEGACY_RAIDA_TK_BYTES_CNT;j++) {
-		ptr += sprintf(ptr, "%02x", udp_buffer[index+(LEGACY_RAIDA_TK_BYTES_CNT-1-j)]);
+		ptr += sprintf(ptr, "%02x", udp_buffer[index+j]);
 	}
 	printf("Ticket_no.:- %s\n", ticket_hex_bytes); 
 	index = RES_HS+HS_BYTES_CNT;

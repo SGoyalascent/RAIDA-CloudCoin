@@ -13,7 +13,7 @@
 #define PORT     18000
 #define MAXLINE 1024
 #define ENCRYPTION_CONFIG_BYTES  16
-#define NOUNCE_BYTES_CNT         8
+#define NOUNCE_BYTES_CNT         16
 #define FRAME_TIME_OUT_SECS		1
 
 #define REQ_NO_1  				9
@@ -64,9 +64,9 @@ int load_encrypt_key(){
 	char path[256];
 	strcpy(path,execpath);
 	strcat(path,"/Data/encryption_key.bin");
-	printf("------------------------------\n");
-	printf("ENCRYPTION CONFIG KEY ..\n");
-	printf("------------------------------\n");
+	//printf("------------------------------\n");
+	//printf("ENCRYPTION CONFIG KEY ..\n");
+	//printf("------------------------------\n");
 	if ((fp_inp = fopen(path, "rb")) == NULL) {
 		printf("encryption_key.bin.bin Cannot be opened , exiting \n");
 		return 1;
@@ -77,7 +77,7 @@ int load_encrypt_key(){
 	}
 	memcpy(encrypt_key,buff,ENCRYPTION_CONFIG_BYTES);
 	for(i=0;i<ENCRYPTION_CONFIG_BYTES;i++){
-		printf("%02x  ",encrypt_key[i]);
+		//printf("%02x  ",encrypt_key[i]);
 	}
 	printf("\n");
 	fclose(fp_inp);
@@ -89,15 +89,15 @@ int main() {
     int i=0;
     unsigned char buffer[MAXLINE], recv_buffer[MAXLINE];	
 	unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,0,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
-										74,39,187,57,149,157,85,138,101,136,77,66,105,128,26,97,225,193,113,149,62,33,
+										183,195,51,211,237,22,213,115,20,43,184,253,251,154,24,46,97,247,217,144,219,47,
 										0x3E, 0x3E};
 /*
  unsigned char buffer_upgrade_coin[MAXLINE] = {0,0,2,0,0,215,2,0,0,0,0,0,22,22,0,1,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
 										0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 										0x3E,0x3E};
 */
-
-	    
+// 88 a7 13 4b c4 5d 59 c3 3e 0e 78 a9 1b 84 2a da 7f 3d 7b e8 df 5e
+// 5e df e8 7b 3d 7f da 2a 84 1b a9 78 0e 	    
 		struct sockaddr_in     servaddr;
 			
 		memcpy(buffer, buffer_upgrade_coin, MAXLINE);
@@ -144,9 +144,16 @@ int main() {
 		nounce[i] = buffer[REQ_NO_6+j];
 		j++;
 	}
+	
 	for(int i = 8;i < ENCRYPTION_CONFIG_BYTES; i++) {
 		nounce[i] = 0;
+	} 
+
+	printf("nounce: ");
+	for(int i = 0;i < NOUNCE_BYTES_CNT; i++) {
+		printf("%d  ", nounce[i]);
 	}
+	printf("\n");
 
 	int send_req = len - 22;
 	unsigned char *req_ptr = &buffer[22];
